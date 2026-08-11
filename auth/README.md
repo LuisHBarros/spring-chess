@@ -14,6 +14,9 @@ A production-ready Authentication & User Management microservice built with **Sp
 - **Password Recovery**: Tokenized password reset workflow dispatches emails via **MailHog** SMTP.
 - **PostgreSQL Persistence**: Spring Data JPA repository adapters with `UserJpaEntity` mappings.
 - **REST Presentation Layer**: Clean `/api/v1/auth` REST API with DTO mappings and global exception handling.
+- **API Documentation**: Interactive Swagger UI powered by SpringDoc OpenAPI 3.0, with schema examples and JWT auth support.
+- **Health Check**: Custom `AuthHealthIndicator` that probes PostgreSQL and Redis connectivity, exposed via `/actuator/health`.
+- **Full Observability & Telemetry**: Integrated Spring Boot Actuator, Prometheus metrics endpoint (`/actuator/prometheus`), OpenTelemetry OTLP tracing export to Tempo, and structured JSON logs for Loki.
 - **80% Code Coverage Enforcement**: JaCoCo Maven plugin enforcing minimum 80% line coverage threshold during `mvn verify`.
 - **GitHub Actions CI/CD Pipeline**: Continuous integration with live PostgreSQL, Redis, and MailHog Docker service containers.
 
@@ -26,6 +29,8 @@ A production-ready Authentication & User Management microservice built with **Sp
 - **In-Memory Cache**: Redis 7
 - **Email Server (Dev)**: MailHog
 - **Security & JWT**: Spring Security, BCrypt, JJWT 0.12.5
+- **API Documentation**: SpringDoc OpenAPI 2.5.0 (Swagger UI)
+- **Observability**: Spring Boot Actuator, Micrometer, Prometheus, OpenTelemetry (OTLP)
 - **Testing**: JUnit 5 (Jupiter), Mockito, H2 Database (in-memory test profile)
 - **Code Coverage**: JaCoCo
 - **Containerization**: Docker Compose
@@ -49,7 +54,7 @@ auth/
     │   │   │   ├── port/                       # Domain ports/interfaces (UserRepository, TokenProvider, TokenBlacklistService, etc.)
     │   │   │   └── service/                    # Domain services (UserRegistrationService, UserLoginService, TokenAuthenticationService, etc.)
     │   │   └── infrastructure/                 # Infrastructure Adapters & Technical Framework Details
-    │   │       ├── config/                     # Spring Configuration Beans & Security Config
+    │   │       ├── config/                     # Spring Config, Security Config, OpenAPI Config, Health Indicator
     │   │       ├── email/                      # JavaMailServiceAdapter (Spring Mail / MailHog)
     │   │       ├── persistence/                # JPA Entity, SpringDataUserRepository, UserRepositoryAdapter (PostgreSQL)
     │   │       ├── security/                   # BCryptPasswordEncoderAdapter, JwtTokenProviderAdapter, RedisTokenBlacklistAdapter
@@ -93,6 +98,17 @@ mvn spring-boot:run
 
 The server will start on `http://localhost:8080`.
 
+### 3. Access API Documentation
+
+Once the application is running, open the interactive Swagger UI:
+
+| URL | Description |
+|-----|-------------|
+| [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html) | Interactive Swagger UI |
+| [`http://localhost:8080/v3/api-docs`](http://localhost:8080/v3/api-docs) | Raw OpenAPI 3.0 JSON spec |
+
+The Swagger UI includes an **Authorize** button (🔒) for entering a JWT Bearer token to test authenticated endpoints.
+
 ---
 
 ## 🧪 Testing & Code Coverage
@@ -108,7 +124,51 @@ The JaCoCo HTML report will be generated at `auth/target/site/jacoco/index.html`
 
 ---
 
+## 🏥 Health Check & Observability
+
+### Health Check
+
+```
+GET /actuator/health
+```
+
+Returns the service health status including custom checks for **PostgreSQL** and **Redis** connectivity:
+
+```json
+{
+  "status": "UP",
+  "components": {
+    "authService": {
+      "status": "UP",
+      "details": {
+        "database": "UP",
+        "redis": "UP"
+      }
+    },
+    "db": { "status": "UP" },
+    "redis": { "status": "UP" }
+  }
+}
+```
+
+### Observability Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/actuator/health` | Service health with DB & Redis checks |
+| `/actuator/prometheus` | Prometheus metrics (histograms, counters) |
+| `/actuator/metrics` | Micrometer metrics browser |
+| `/actuator/info` | Application info |
+
+### Tracing
+
+Distributed tracing is exported via **OpenTelemetry OTLP** to the configured endpoint (default: `http://localhost:4318/v1/traces`). Sampling probability is set to `1.0` (100%) by default.
+
+---
+
 ## 📡 REST API Reference (`/api/v1/auth`)
+
+> 💡 **Tip**: All endpoints below are also available interactively via [Swagger UI](http://localhost:8080/swagger-ui.html) with request/response examples.
 
 ### 1. Register User
 - **HTTP Method**: `POST`
