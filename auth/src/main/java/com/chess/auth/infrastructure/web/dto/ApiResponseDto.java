@@ -1,7 +1,14 @@
 package com.chess.auth.infrastructure.web.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Standard API response wrapper")
 public class ApiResponseDto {
+
+    @Schema(description = "Whether the operation was successful", example = "true")
     private boolean success;
+
+    @Schema(description = "Human-readable response message", example = "Operation completed successfully")
     private String message;
 
     public ApiResponseDto() {}

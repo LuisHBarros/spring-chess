@@ -1,12 +1,24 @@
 package com.chess.auth.infrastructure.web.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.chess.auth.domain.model.AuthToken;
 
+@Schema(description = "Authentication token response containing JWT tokens and optional user info")
 public class AuthTokenResponseDto {
+
+    @Schema(description = "JWT access token for authenticating requests", example = "eyJhbGciOiJSUzI1NiJ9...")
     private String accessToken;
+
+    @Schema(description = "JWT refresh token for obtaining new access tokens", example = "eyJhbGciOiJSUzI1NiJ9...")
     private String refreshToken;
+
+    @Schema(description = "Token type", example = "Bearer")
     private String tokenType;
+
+    @Schema(description = "Access token expiry time in seconds", example = "3600")
     private long expiresInSeconds;
+
+    @Schema(description = "Authenticated user details (null on token refresh)")
     private UserResponseDto user;
 
     public AuthTokenResponseDto() {}
