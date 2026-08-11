@@ -1,8 +1,13 @@
 package com.chess.auth.infrastructure.web.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequestDto {
+
     private String email;
     private String username;
+
+    @NotBlank(message = "Password is required")
     private String password;
 
     public LoginRequestDto() {}

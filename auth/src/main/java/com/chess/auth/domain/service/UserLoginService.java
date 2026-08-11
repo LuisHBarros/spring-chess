@@ -27,14 +27,14 @@ public class UserLoginService {
 
     public User loginWithEmail(Email email, Password rawPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         return authenticateAndTouch(user, rawPassword);
     }
 
     public User loginWithUsername(Username username, Password rawPassword) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         return authenticateAndTouch(user, rawPassword);
     }
