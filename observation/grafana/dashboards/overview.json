@@ -13,91 +13,245 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    { "title": "Auth HTTP & API", "url": "/d/auth-service-http", "type": "link", "icon": "external link" },
+    { "title": "Auth JVM & Infra", "url": "/d/auth-service-jvm", "type": "link", "icon": "external link" }
+  ],
   "liveNow": false,
   "panels": [
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "# 🔭 Spring Chess — Observability Overview\nHigh-level health and signal overview across all pillars: **Metrics**, **Traces**, and **Logs**."
+      }
+    },
+    {
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 2 },
       "id": 1,
-      "title": "Spring Boot HTTP Request Rate",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
+      "title": "HTTP Request Rate",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 100 }] },
+          "unit": "reqps"
+        },
+        "overrides": []
       },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri, status)",
-          "legendFormat": "{{uri}} ({{status}})",
-          "range": true,
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"auth-service\"}[1m]))",
+          "legendFormat": "req/s",
           "refId": "A"
         }
       ]
     },
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 2 },
       "id": 2,
-      "title": "JVM Memory Usage",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
+      "title": "P95 Latency",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.25 }, { "color": "red", "value": 1 }] },
+          "unit": "s"
+        },
+        "overrides": []
       },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "editorMode": "code",
-          "expr": "jvm_memory_used_bytes",
-          "legendFormat": "{{area}} - {{id}}",
-          "range": true,
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"auth-service\"}[5m])) by (le))",
+          "legendFormat": "p95",
           "refId": "A"
         }
       ]
     },
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 10,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 2 },
       "id": 3,
-      "title": "Application Container Logs (Loki)",
+      "title": "Error Rate (5xx)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.01 }, { "color": "red", "value": 0.05 }] },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"auth-service\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"auth-service\"}[5m]))",
+          "legendFormat": "5xx rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 2 },
+      "id": 4,
+      "title": "Heap Used",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 268435456 }, { "color": "red", "value": 536870912 }] },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(jvm_memory_used_bytes{application=\"auth-service\", area=\"heap\"})",
+          "legendFormat": "Heap",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 2 },
+      "id": 5,
+      "title": "Live Threads",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 300 }] }
+        },
+        "overrides": []
+      },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "jvm_threads_live_threads{application=\"auth-service\"}",
+          "legendFormat": "threads",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 2 },
+      "id": 6,
+      "title": "DB Pool Active",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 9 }] }
+        },
+        "overrides": []
+      },
+      "options": { "graphMode": "area", "colorMode": "background", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "hikaricp_connections_active{application=\"auth-service\"}",
+          "legendFormat": "active",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 10,
+      "title": "HTTP Request Rate by Endpoint",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 15, "spanNulls": true, "drawStyle": "line", "showPoints": "never", "gradientMode": "scheme" },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"auth-service\"}[1m])) by (uri, method)",
+          "legendFormat": "{{method}} {{uri}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 11,
+      "title": "JVM Heap Memory Usage",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 20, "spanNulls": true, "drawStyle": "line", "showPoints": "never", "gradientMode": "scheme" },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(jvm_memory_used_bytes{application=\"auth-service\", area=\"heap\"})",
+          "legendFormat": "Used",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(jvm_memory_committed_bytes{application=\"auth-service\", area=\"heap\"})",
+          "legendFormat": "Committed",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "sum(jvm_memory_max_bytes{application=\"auth-service\", area=\"heap\"})",
+          "legendFormat": "Max",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "id": 20,
+      "title": "Application Logs (Loki)",
       "type": "logs",
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "loki",
-            "uid": "Loki"
-          },
-          "editorMode": "code",
+          "datasource": { "type": "loki", "uid": "Loki" },
           "expr": "{container=~\".+\"}",
           "queryType": "range",
           "refId": "A"
@@ -105,16 +259,13 @@
       ]
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["spring-chess", "observability"],
-  "time": {
-    "from": "now-15m",
-    "to": "now"
-  },
+  "tags": ["spring-chess", "observability", "overview"],
+  "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Spring Chess Observability Overview",
+  "title": "Spring Chess — Observability Overview",
   "uid": "spring-chess-overview"
 }
