@@ -14,8 +14,8 @@ class JwtTokenProviderAdapterTest {
 
     @BeforeEach
     void setUp() {
-        String secret = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
-        jwtTokenProvider = new JwtTokenProviderAdapter(secret, 3600000, 604800000);
+        RsaKeyPairProvider keyPairProvider = new RsaKeyPairProvider();
+        jwtTokenProvider = new JwtTokenProviderAdapter(keyPairProvider, 3600000, 604800000);
         testUser = User.create(new Username("jwt_player"), new Email("player@jwt.com"), Password.fromHash("hashed_pass"));
     }
 

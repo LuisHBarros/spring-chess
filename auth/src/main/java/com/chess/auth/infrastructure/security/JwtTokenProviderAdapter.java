@@ -6,29 +6,24 @@ import com.chess.auth.domain.model.User;
 import com.chess.auth.domain.model.UserId;
 import com.chess.auth.domain.port.TokenProvider;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
 public class JwtTokenProviderAdapter implements TokenProvider {
 
-    private final SecretKey key;
+    private final RsaKeyPairProvider keyPairProvider;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
 
     public JwtTokenProviderAdapter(
-            @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}") String secret,
+            RsaKeyPairProvider keyPairProvider,
             @Value("${jwt.access-token-expiration-ms:3600000}") long accessTokenExpirationMs,
             @Value("${jwt.refresh-token-expiration-ms:604800000}") long refreshTokenExpirationMs) {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        this.key = Keys.hmacShaKeyFor(keyBytes);
+        this.keyPairProvider = keyPairProvider;
         this.accessTokenExpirationMs = accessTokenExpirationMs;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
     }
@@ -39,22 +34,24 @@ public class JwtTokenProviderAdapter implements TokenProvider {
 
         Date accessExpiry = new Date(now.getTime() + accessTokenExpirationMs);
         String accessToken = Jwts.builder()
+                .header().keyId(keyPairProvider.getKeyId()).and()
                 .subject(user.getId().getValue().toString())
                 .claim("username", user.getUsername().getValue())
                 .claim("email", user.getEmail().getValue())
                 .claim("type", "access")
                 .issuedAt(now)
                 .expiration(accessExpiry)
-                .signWith(key)
+                .signWith(keyPairProvider.getPrivateKey(), Jwts.SIG.RS256)
                 .compact();
 
         Date refreshExpiry = new Date(now.getTime() + refreshTokenExpirationMs);
         String refreshToken = Jwts.builder()
+                .header().keyId(keyPairProvider.getKeyId()).and()
                 .subject(user.getEmail().getValue())
                 .claim("type", "refresh")
                 .issuedAt(now)
                 .expiration(refreshExpiry)
-                .signWith(key)
+                .signWith(keyPairProvider.getPrivateKey(), Jwts.SIG.RS256)
                 .compact();
 
         return new AuthToken(accessToken, refreshToken, "Bearer", accessTokenExpirationMs / 1000);
@@ -105,7 +102,7 @@ public class JwtTokenProviderAdapter implements TokenProvider {
 
     private Claims getClaims(String token) {
         return Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(keyPairProvider.getPublicKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
