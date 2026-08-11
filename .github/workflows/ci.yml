@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, development, production ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, development, production ]
 
 jobs:
   build-and-test:
@@ -31,6 +31,16 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout Code

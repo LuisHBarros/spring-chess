@@ -1,10 +1,12 @@
 package com.chess.auth.infrastructure.web.controller;
 
+import com.chess.auth.domain.model.AuthToken;
 import com.chess.auth.domain.model.Email;
 import com.chess.auth.domain.model.Password;
 import com.chess.auth.domain.model.User;
 import com.chess.auth.domain.model.Username;
 import com.chess.auth.domain.service.PasswordRecoveryService;
+import com.chess.auth.domain.service.TokenAuthenticationService;
 import com.chess.auth.domain.service.UserLoginService;
 import com.chess.auth.domain.service.UserRegistrationService;
 import com.chess.auth.infrastructure.web.dto.*;
@@ -19,27 +21,33 @@ public class AuthController {
     private final UserRegistrationService registrationService;
     private final UserLoginService loginService;
     private final PasswordRecoveryService recoveryService;
+    private final TokenAuthenticationService tokenAuthService;
 
     public AuthController(UserRegistrationService registrationService,
                           UserLoginService loginService,
-                          PasswordRecoveryService recoveryService) {
+                          PasswordRecoveryService recoveryService,
+                          TokenAuthenticationService tokenAuthService) {
         this.registrationService = registrationService;
         this.loginService = loginService;
         this.recoveryService = recoveryService;
+        this.tokenAuthService = tokenAuthService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDto> register(@RequestBody RegisterRequestDto dto) {
+    public ResponseEntity<AuthTokenResponseDto> register(@RequestBody RegisterRequestDto dto) {
         Username username = new Username(dto.getUsername());
         Email email = new Email(dto.getEmail());
         Password rawPassword = Password.fromRaw(dto.getPassword());
 
         User registered = registrationService.register(username, email, rawPassword);
-        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseDto.fromDomain(registered));
+        AuthToken tokens = tokenAuthService.generateTokens(registered);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(AuthTokenResponseDto.from(tokens, UserResponseDto.fromDomain(registered)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponseDto> login(@RequestBody LoginRequestDto dto) {
+    public ResponseEntity<AuthTokenResponseDto> login(@RequestBody LoginRequestDto dto) {
         User loggedIn;
         Password rawPassword = Password.fromRaw(dto.getPassword());
 
@@ -51,7 +59,33 @@ public class AuthController {
             throw new IllegalArgumentException("Either email or username must be provided for login");
         }
 
-        return ResponseEntity.ok(UserResponseDto.fromDomain(loggedIn));
+        AuthToken tokens = tokenAuthService.generateTokens(loggedIn);
+        return ResponseEntity.ok(AuthTokenResponseDto.from(tokens, UserResponseDto.fromDomain(loggedIn)));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthTokenResponseDto> refreshToken(@RequestBody RefreshTokenRequestDto dto) {
+        AuthToken tokens = tokenAuthService.refreshToken(dto.getRefreshToken());
+        return ResponseEntity.ok(AuthTokenResponseDto.from(tokens, null));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponseDto> logout(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody(required = false) LogoutRequestDto dto) {
+
+        String token = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else if (dto != null && dto.getAccessToken() != null) {
+            token = dto.getAccessToken();
+        }
+
+        if (token != null && !token.isBlank()) {
+            tokenAuthService.logout(token);
+        }
+
+        return ResponseEntity.ok(ApiResponseDto.ok("Logged out successfully"));
     }
 
     @PostMapping("/recover-password")

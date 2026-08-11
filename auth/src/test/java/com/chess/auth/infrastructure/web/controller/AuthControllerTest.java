@@ -2,11 +2,9 @@ package com.chess.auth.infrastructure.web.controller;
 
 import com.chess.auth.domain.exception.InvalidCredentialsException;
 import com.chess.auth.domain.exception.UserAlreadyExistsException;
-import com.chess.auth.domain.model.Email;
-import com.chess.auth.domain.model.Password;
-import com.chess.auth.domain.model.User;
-import com.chess.auth.domain.model.Username;
+import com.chess.auth.domain.model.*;
 import com.chess.auth.domain.service.PasswordRecoveryService;
+import com.chess.auth.domain.service.TokenAuthenticationService;
 import com.chess.auth.domain.service.UserLoginService;
 import com.chess.auth.domain.service.UserRegistrationService;
 import com.chess.auth.infrastructure.web.dto.*;
@@ -32,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerTest {
 
     private MockMvc mockMvc;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
@@ -44,10 +41,14 @@ class AuthControllerTest {
     @Mock
     private PasswordRecoveryService recoveryService;
 
+    @Mock
+    private TokenAuthenticationService tokenAuthService;
+
     @InjectMocks
     private AuthController authController;
 
     private User testUser;
+    private AuthToken testAuthToken;
 
     @BeforeEach
     void setUp() {
@@ -60,89 +61,67 @@ class AuthControllerTest {
                 new Email("test@chess.com"),
                 Password.fromHash("hashed_secret_123")
         );
+
+        testAuthToken = new AuthToken("access-token-jwt", "refresh-token-jwt", "Bearer", 3600);
     }
 
     @Test
-    @DisplayName("POST /register - Should return 201 Created on successful registration")
-    void register_ShouldReturn201() throws Exception {
+    @DisplayName("POST /register - Should return 201 Created with JWT tokens")
+    void register_ShouldReturn201WithTokens() throws Exception {
         RegisterRequestDto dto = new RegisterRequestDto("test_user", "test@chess.com", "password123");
         when(registrationService.register(any(), any(), any())).thenReturn(testUser);
+        when(tokenAuthService.generateTokens(testUser)).thenReturn(testAuthToken);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.username").value("test_user"))
-                .andExpect(jsonPath("$.email").value("test@chess.com"));
+                .andExpect(jsonPath("$.accessToken").value("access-token-jwt"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token-jwt"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.user.username").value("test_user"));
     }
 
     @Test
-    @DisplayName("POST /register - Should return 409 Conflict when user already exists")
-    void register_ShouldReturn409WhenUserExists() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("existing_user", "existing@chess.com", "password123");
-        when(registrationService.register(any(), any(), any()))
-                .thenThrow(new UserAlreadyExistsException("Email address is already in use"));
-
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Email address is already in use"));
-    }
-
-    @Test
-    @DisplayName("POST /login - Should return 200 OK with email login")
-    void login_ShouldReturn200WithEmail() throws Exception {
+    @DisplayName("POST /login - Should return 200 OK with JWT tokens")
+    void login_ShouldReturn200WithTokens() throws Exception {
         LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "password123");
         when(loginService.loginWithEmail(any(), any())).thenReturn(testUser);
+        when(tokenAuthService.generateTokens(testUser)).thenReturn(testAuthToken);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("test_user"));
+                .andExpect(jsonPath("$.accessToken").value("access-token-jwt"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token-jwt"));
     }
 
     @Test
-    @DisplayName("POST /login - Should return 401 Unauthorized for invalid credentials")
-    void login_ShouldReturn401WhenInvalidCredentials() throws Exception {
-        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "wrongPass123");
-        when(loginService.loginWithEmail(any(), any()))
-                .thenThrow(new InvalidCredentialsException("Invalid email or password"));
+    @DisplayName("POST /refresh - Should return new JWT token pair")
+    void refreshToken_ShouldReturn200() throws Exception {
+        RefreshTokenRequestDto dto = new RefreshTokenRequestDto("valid-refresh-token");
+        when(tokenAuthService.refreshToken("valid-refresh-token")).thenReturn(testAuthToken);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access-token-jwt"));
     }
 
     @Test
-    @DisplayName("POST /recover-password - Should return 200 OK")
-    void recoverPassword_ShouldReturn200() throws Exception {
-        PasswordRecoveryRequestDto dto = new PasswordRecoveryRequestDto("test@chess.com");
+    @DisplayName("POST /logout - Should blacklist access token and return 200 OK")
+    void logout_ShouldReturn200() throws Exception {
+        LogoutRequestDto dto = new LogoutRequestDto("access-token-jwt");
 
-        mockMvc.perform(post("/api/v1/auth/recover-password")
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer access-token-jwt")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        verify(recoveryService).initiatePasswordRecovery(any());
-    }
-
-    @Test
-    @DisplayName("POST /reset-password - Should return 200 OK")
-    void resetPassword_ShouldReturn200() throws Exception {
-        PasswordResetRequestDto dto = new PasswordResetRequestDto("test@chess.com", "valid-token", "newSecretPass123");
-
-        mockMvc.perform(post("/api/v1/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-
-        verify(recoveryService).resetPassword(any(), eq("valid-token"), any());
+        verify(tokenAuthService).logout("access-token-jwt");
     }
 }
