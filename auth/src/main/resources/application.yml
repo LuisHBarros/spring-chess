@@ -17,6 +17,11 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   mail:
     host: localhost
     port: 1025
@@ -26,6 +31,11 @@ spring:
           auth: false
           starttls:
             enable: false
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  access-token-expiration-ms: 3600000
+  refresh-token-expiration-ms: 604800000
 
 server:
   port: 8080
