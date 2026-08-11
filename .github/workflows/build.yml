@@ -67,17 +67,13 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Check SONAR_TOKEN secret availability
-        run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "::error::SONAR_TOKEN is empty or missing! Please ensure SONAR_TOKEN is added to Repository Secrets in GitHub Settings."
-            exit 1
-          fi
-          echo "SONAR_TOKEN secret is present and available."
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Build and analyze
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         working-directory: ./auth
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=LuisHBarros_spring-chess
+      - name: Build only (no Sonar token available)
+        if: ${{ secrets.SONAR_TOKEN == '' }}
+        working-directory: ./auth
+        run: mvn -B verify
