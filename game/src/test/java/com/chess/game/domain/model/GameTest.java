@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +54,7 @@ class GameTest {
     void shouldRejectMoveIfNotPlayersTurn() {
         assertThatThrownBy(() -> game.makeMove(blackPlayer, Position.fromAlgebraic("e7"), Position.fromAlgebraic("e5"), null))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Not player's turn");
+                .hasMessageContaining("Not your turn");
     }
 
     @Test
@@ -95,13 +97,22 @@ class GameTest {
         pieces.put(e8, Piece.create(PieceType.KING, Color.BLACK, e8));
 
         Board customBoard = Board.reconstitute(pieces);
+        Instant now = Instant.now();
         Game customGame = Game.reconstitute(
-                GameId.from(UUID.randomUUID()),
-                whitePlayer, blackPlayer,
-                customBoard, GameStatus.IN_PROGRESS, null,
-                Color.WHITE, 0, 0, null,
-                java.util.Collections.emptyList(),
-                GameClock.create(600, 5)
+                GameId.generate(),
+                whitePlayer,
+                blackPlayer,
+                customBoard,
+                GameStatus.IN_PROGRESS,
+                null,
+                Color.WHITE,
+                Collections.emptyList(),
+                0,
+                0,
+                GameClock.create(600, 5),
+                null,
+                now,
+                now
         );
 
         // Verify f1 is attacked by Black bishop
@@ -128,13 +139,22 @@ class GameTest {
         pieces.put(a8, Piece.create(PieceType.KING, Color.BLACK, a8));
 
         Board customBoard = Board.reconstitute(pieces);
+        Instant now = Instant.now();
         Game customGame = Game.reconstitute(
-                GameId.from(UUID.randomUUID()),
-                whitePlayer, blackPlayer,
-                customBoard, GameStatus.IN_PROGRESS, null,
-                Color.WHITE, 0, 0, null,
-                java.util.Collections.emptyList(),
-                GameClock.create(600, 5)
+                GameId.generate(),
+                whitePlayer,
+                blackPlayer,
+                customBoard,
+                GameStatus.IN_PROGRESS,
+                null,
+                Color.WHITE,
+                Collections.emptyList(),
+                0,
+                0,
+                GameClock.create(600, 5),
+                null,
+                now,
+                now
         );
 
         assertThat(customGame.isCheck(Color.WHITE)).isTrue();
@@ -162,7 +182,8 @@ class GameTest {
         // 4. Qxf7# Checkmate
         game.makeMove(whitePlayer, Position.fromAlgebraic("h5"), Position.fromAlgebraic("f7"), null);
 
-        assertThat(game.getStatus()).isEqualTo(GameStatus.FINISHED);
+        assertThat(game.getStatus()).isEqualTo(GameStatus.CHECKMATE);
+        assertThat(game.getStatus().isTerminal()).isTrue();
         assertThat(game.getResult()).isEqualTo(GameResult.WHITE_WINS);
     }
 
@@ -171,7 +192,8 @@ class GameTest {
     void shouldHandleResignation() {
         game.resign(whitePlayer);
 
-        assertThat(game.getStatus()).isEqualTo(GameStatus.FINISHED);
+        assertThat(game.getStatus()).isEqualTo(GameStatus.RESIGNED);
+        assertThat(game.getStatus().isTerminal()).isTrue();
         assertThat(game.getResult()).isEqualTo(GameResult.BLACK_WINS);
     }
 }

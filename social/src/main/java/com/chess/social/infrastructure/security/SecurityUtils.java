@@ -1,6 +1,7 @@
 package com.chess.social.infrastructure.security;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -33,11 +34,15 @@ public final class SecurityUtils {
     }
 
     public static void validateUserIdentity(UUID requestedUserId) {
-        UUID authenticatedId = getAuthenticatedUserId();
-        if (authenticatedId != null && requestedUserId != null && !authenticatedId.equals(requestedUserId)) {
-            throw new AccessDeniedException(
-                    "Authenticated user ID does not match the requested player/user ID"
-            );
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            UUID authenticatedId = getAuthenticatedUserId();
+            if (authenticatedId == null) {
+                throw new AccessDeniedException("Authenticated user identity could not be verified from token");
+            }
+            if (requestedUserId != null && !authenticatedId.equals(requestedUserId)) {
+                throw new AccessDeniedException("Authenticated user ID does not match the requested player/user ID");
+            }
         }
     }
 }

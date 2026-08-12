@@ -168,6 +168,10 @@ public class Board {
         return true;
     }
 
+    public List<Piece> getAllPieces() {
+        return new ArrayList<>(pieces.values());
+    }
+
     public List<Piece> getAllPieces(Color color) {
         return pieces.values().stream()
                 .filter(p -> p.getColor() == color)
