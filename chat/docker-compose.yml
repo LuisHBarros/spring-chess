@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  chat-db:
+    image: postgres:15-alpine
+    container_name: chess-chat-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
