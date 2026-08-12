@@ -37,6 +37,15 @@ jwt:
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 604800000
 
+aws:
+  endpoint: ${AWS_ENDPOINT:http://localhost:4566}
+  region: ${AWS_REGION:us-east-1}
+  sns:
+    user-events-topic-arn: ${AWS_USER_EVENTS_TOPIC_ARN:arn:aws:sns:us-east-1:000000000000:user-events}
+    match-events-topic-arn: ${AWS_MATCH_EVENTS_TOPIC_ARN:arn:aws:sns:us-east-1:000000000000:match-events.fifo}
+  sqs:
+    auth-match-events-queue-url: ${AWS_AUTH_MATCH_EVENTS_QUEUE_URL:http://localhost:4566/000000000000/auth-match-events-queue.fifo}
+
 server:
   port: 8080
 
