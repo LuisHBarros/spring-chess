@@ -1,19 +1,27 @@
-name: SonarQube
+name: SonarCloud Analysis
+
 on:
   push:
     branches:
+      - main
+      - master
       - development
       - prod
+      - production
   pull_request:
     branches:
+      - main
+      - master
       - development
       - prod
+      - production
     types: [opened, synchronize, reopened]
 
 jobs:
   build:
     name: Build and analyze
     runs-on: ubuntu-latest
+    environment: CI
 
     services:
       postgres:
@@ -47,33 +55,49 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0  # Disable shallow clone for accurate SonarCloud analysis
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
-      - name: Cache SonarQube packages
+
+      - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
+
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Build and analyze
+
+      - name: Build and analyze Auth service with SonarCloud
         if: ${{ secrets.SONAR_TOKEN != '' }}
         working-directory: ./auth
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=LuisHBarros_spring-chess
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=LuisHBarros_spring-chess
+
+      - name: Build and analyze Social service with SonarCloud
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        working-directory: ./social
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=LuisHBarros_spring-chess-social
+
       - name: Build only (no Sonar token available)
         if: ${{ secrets.SONAR_TOKEN == '' }}
-        working-directory: ./auth
-        run: mvn -B verify
+        run: |
+          mvn -B verify --file auth/pom.xml
+          mvn -B verify --file social/pom.xml
