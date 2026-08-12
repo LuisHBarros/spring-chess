@@ -12,20 +12,22 @@ A production-ready Authentication & User Management microservice built with **Sp
 - **Redis Token Blacklist**: Instant access token revocation (Logout) backed by Redis TTL key expiration.
 - **Password Hashing & Security**: Passwords hashed using Spring Security's **BCryptPasswordEncoder**.
 - **Password Recovery**: Tokenized password reset workflow dispatches emails via **MailHog** SMTP.
-- **PostgreSQL Persistence**: Spring Data JPA repository adapters with `UserJpaEntity` mappings.
+- **PostgreSQL Persistence**: Spring Data JPA repository adapters with `UserJpaEntity` mappings connected to LocalStack RDS.
+- **AWS SNS/SQS Asynchronous Communication**: Event publishing (`user-events` SNS topic) and event listening (`auth-match-events-queue.fifo` SQS queue) with trace context propagation as documented in `architecture.html`.
 - **REST Presentation Layer**: Clean `/api/v1/auth` REST API with DTO mappings and global exception handling.
 - **API Documentation**: Interactive Swagger UI powered by SpringDoc OpenAPI 3.0, with schema examples and JWT auth support.
 - **Health Check**: Custom `AuthHealthIndicator` that probes PostgreSQL and Redis connectivity, exposed via `/actuator/health`.
 - **Full Observability & Telemetry**: Integrated Spring Boot Actuator, Prometheus metrics endpoint (`/actuator/prometheus`), OpenTelemetry OTLP tracing export to Tempo, and structured JSON logs for Loki.
 - **80% Code Coverage Enforcement**: JaCoCo Maven plugin enforcing minimum 80% line coverage threshold during `mvn verify`.
-- **GitHub Actions CI/CD Pipeline**: Continuous integration with live PostgreSQL, Redis, and MailHog Docker service containers.
+- **GitHub Actions CI/CD Pipeline**: Continuous integration with live LocalStack (RDS/SNS/SQS), Redis, and MailHog Docker service containers.
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Framework**: Spring Boot 3.2.4 (Java 17 / 21)
-- **Database**: PostgreSQL 16
+- **AWS & Messaging**: AWS SDK v2 (SNS & SQS) via LocalStack
+- **Database**: LocalStack RDS (PostgreSQL 16)
 - **In-Memory Cache**: Redis 7
 - **Email Server (Dev)**: MailHog
 - **Security & JWT**: Spring Security, BCrypt, JJWT 0.12.5
