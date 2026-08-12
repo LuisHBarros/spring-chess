@@ -48,6 +48,7 @@ public class MessageController {
     @Operation(summary = "Send message", description = "Sends a new message to a chat room")
     public ResponseEntity<ApiResponseDto<MessageResponseDto>> sendMessage(
             @Valid @RequestBody SendMessageRequestDto dto) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getSenderId());
         Message message = messageDomainService.sendMessage(
                 ChatRoomId.from(dto.getChatRoomId()),
                 UserId.from(dto.getSenderId()),
@@ -78,6 +79,7 @@ public class MessageController {
     public ResponseEntity<ApiResponseDto<Long>> getUnreadCount(
             @PathVariable("roomId") UUID roomId,
             @RequestParam("userId") UUID userId) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(userId);
         long count = messageRepository.countUnreadMessages(ChatRoomId.from(roomId), UserId.from(userId));
         return ResponseEntity.ok(ApiResponseDto.success("Unread message count retrieved", count));
     }
@@ -87,6 +89,7 @@ public class MessageController {
     public ResponseEntity<ApiResponseDto<MessageResponseDto>> editMessage(
             @PathVariable("id") UUID messageId,
             @Valid @RequestBody EditMessageRequestDto dto) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         Message message = messageDomainService.editMessage(
                 MessageId.from(messageId),
                 UserId.from(dto.getActorId()),
@@ -101,6 +104,7 @@ public class MessageController {
     public ResponseEntity<ApiResponseDto<MessageResponseDto>> deleteMessage(
             @PathVariable("id") UUID messageId,
             @RequestParam("actorId") UUID actorId) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         Message message = messageDomainService.deleteMessage(
                 MessageId.from(messageId),
                 UserId.from(actorId)
@@ -114,6 +118,7 @@ public class MessageController {
     public ResponseEntity<ApiResponseDto<MessageResponseDto>> addReaction(
             @PathVariable("id") UUID messageId,
             @Valid @RequestBody AddReactionRequestDto dto) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         Message message = messageDomainService.addReaction(
                 MessageId.from(messageId),
                 UserId.from(dto.getActorId()),
@@ -129,6 +134,7 @@ public class MessageController {
             @PathVariable("id") UUID messageId,
             @RequestParam("actorId") UUID actorId,
             @RequestParam("emoji") String emoji) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         Message message = messageDomainService.removeReaction(
                 MessageId.from(messageId),
                 UserId.from(actorId),
@@ -143,6 +149,7 @@ public class MessageController {
     public ResponseEntity<ApiResponseDto<Void>> markAsRead(
             @PathVariable("roomId") UUID roomId,
             @RequestParam("userId") UUID userId) {
+        com.chess.chat.infrastructure.security.SecurityUtils.validateUserIdentity(userId);
         messageDomainService.markMessagesAsRead(ChatRoomId.from(roomId), UserId.from(userId));
         return ResponseEntity.ok(ApiResponseDto.success("Messages marked as read", null));
     }

@@ -55,6 +55,7 @@ public class GuildController {
     @PostMapping
     @Operation(summary = "Create a new Guild", description = "Creates a new Guild with an Owner and default General category")
     public ResponseEntity<ApiResponseDto<GuildResponseDto>> createGuild(@Valid @RequestBody CreateGuildRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getCreatorId());
         Avatar avatar = dto.getAvatarUrl() != null && !dto.getAvatarUrl().isBlank()
                 ? Avatar.of(dto.getAvatarUrl())
                 : Avatar.defaultAvatar();
@@ -84,6 +85,7 @@ public class GuildController {
     public ResponseEntity<ApiResponseDto<GuildResponseDto>> transferOwnership(
             @PathVariable("id") UUID guildId,
             @Valid @RequestBody TransferOwnershipRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         Guild guild = guildDomainService.transferOwnership(
                 UserId.from(dto.getActorId()),
                 GuildId.from(guildId),
@@ -98,6 +100,7 @@ public class GuildController {
     public ResponseEntity<ApiResponseDto<GuildResponseDto>> updateAvatar(
             @PathVariable("id") UUID guildId,
             @Valid @RequestBody UpdateAvatarRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         Guild guild = guildDomainService.updateGuildAvatar(
                 UserId.from(dto.getActorId()),
                 GuildId.from(guildId),
@@ -112,6 +115,7 @@ public class GuildController {
     public ResponseEntity<ApiResponseDto<GuildResponseDto.CategoryResponseDto>> addCategory(
             @PathVariable("id") UUID guildId,
             @Valid @RequestBody CategoryRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         GuildCategory category = guildDomainService.addCategory(
                 UserId.from(dto.getActorId()),
                 GuildId.from(guildId),
@@ -129,6 +133,7 @@ public class GuildController {
             @PathVariable("id") UUID guildId,
             @PathVariable("categoryId") UUID categoryId,
             @RequestParam("actorId") UUID actorId) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         guildDomainService.removeCategory(
                 UserId.from(actorId),
                 GuildId.from(guildId),
@@ -144,6 +149,7 @@ public class GuildController {
             @PathVariable("id") UUID guildId,
             @PathVariable("categoryId") UUID categoryId,
             @Valid @RequestBody RankRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         GuildRank rank = guildDomainService.addRankToCategory(
                 UserId.from(dto.getActorId()),
                 GuildId.from(guildId),
@@ -164,6 +170,7 @@ public class GuildController {
             @PathVariable("categoryId") UUID categoryId,
             @PathVariable("rankId") UUID rankId,
             @RequestParam("actorId") UUID actorId) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         guildDomainService.removeRankFromCategory(
                 UserId.from(actorId),
                 GuildId.from(guildId),
@@ -179,6 +186,7 @@ public class GuildController {
     public ResponseEntity<ApiResponseDto<GuildResponseDto.GuildMemberResponseDto>> addMember(
             @PathVariable("id") UUID guildId,
             @Valid @RequestBody AddMemberRequestDto dto) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(dto.getActorId());
         GuildMember member = guildDomainService.addMember(
                 UserId.from(dto.getActorId()),
                 GuildId.from(guildId),
@@ -196,6 +204,7 @@ public class GuildController {
             @PathVariable("id") UUID guildId,
             @PathVariable("memberId") UUID targetMemberId,
             @RequestParam("actorId") UUID actorId) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         guildDomainService.removeMember(
                 UserId.from(actorId),
                 GuildId.from(guildId),
@@ -210,6 +219,7 @@ public class GuildController {
     public ResponseEntity<ApiResponseDto<Void>> deleteGuild(
             @PathVariable("id") UUID guildId,
             @RequestParam("actorId") UUID actorId) {
+        com.chess.social.infrastructure.security.SecurityUtils.validateUserIdentity(actorId);
         guildDomainService.deleteGuild(
                 UserId.from(actorId),
                 GuildId.from(guildId)

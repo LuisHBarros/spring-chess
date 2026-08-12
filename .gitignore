@@ -16,3 +16,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated keys
+.keys/
+*.key
+

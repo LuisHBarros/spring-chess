@@ -72,6 +72,7 @@ public class GameController {
     @Operation(summary = "Make a move in a game")
     public ResponseEntity<ApiResponseDto<MoveResponseDto>> makeMove(
             @PathVariable UUID gameId, @Valid @RequestBody MakeMoveRequest request) {
+        com.chess.game.infrastructure.security.SecurityUtils.validateUserIdentity(request.playerId());
         PieceType promotionPiece = request.promotionPiece() != null
                 ? PieceType.valueOf(request.promotionPiece().toUpperCase())
                 : null;
@@ -99,6 +100,7 @@ public class GameController {
     @Operation(summary = "Resign from a game")
     public ResponseEntity<ApiResponseDto<GameResponseDto>> resignGame(
             @PathVariable UUID gameId, @RequestBody UUID playerId) {
+        com.chess.game.infrastructure.security.SecurityUtils.validateUserIdentity(playerId);
         Game game = gameDomainService.resignGame(GameId.from(gameId), PlayerId.from(playerId));
         return ResponseEntity.ok(ApiResponseDto.success(GameResponseDto.fromDomain(game)));
     }

@@ -1,6 +1,11 @@
 spring:
   application:
     name: social-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
 
   datasource:
     url: jdbc:postgresql://localhost:5432/social_db

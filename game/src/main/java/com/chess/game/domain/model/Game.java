@@ -252,7 +252,9 @@ public class Game {
                     int rookFile = fileDiff > 0 ? 7 : 0;
                     Optional<Piece> rook = board.getPieceAt(Position.of(rookFile, from.getRank()));
                     if (rook.isPresent() && rook.get().getPieceType() == PieceType.ROOK && !rook.get().hasMoved()) {
-                        return board.isPathClear(from, Position.of(rookFile, from.getRank()));
+                        if (!board.isPathClear(from, Position.of(rookFile, from.getRank()))) return false;
+                        Position intermediate = Position.of(fileDiff > 0 ? 5 : 3, from.getRank());
+                        return !board.isSquareAttackedBy(intermediate, piece.getColor().opposite());
                     }
                 }
                 return false;
