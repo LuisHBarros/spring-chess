@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:3.0.0
     container_name: chess-localstack
     ports:
       - "4566:4566"            # LocalStack Gateway
       - "4510-4559:4510-4559"  # external services port range
-      - "5432:5432"            # RDS PostgreSQL port
+      - "5433:5432"            # RDS PostgreSQL port
     environment:
       - SERVICES=sns,sqs,s3,rds
       - AWS_DEFAULT_REGION=us-east-1
