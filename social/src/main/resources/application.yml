@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: social-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/social_db
+    username: social_user
+    password: social_pass
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+aws:
+  endpoint: ${AWS_ENDPOINT:http://localhost:4566}
+  region: ${AWS_REGION:us-east-1}
+  sns:
+    social-events-topic-arn: ${AWS_SOCIAL_EVENTS_TOPIC_ARN:arn:aws:sns:us-east-1:000000000000:social-events}
+  sqs:
+    social-user-events-queue-url: ${AWS_SOCIAL_USER_EVENTS_QUEUE_URL:http://localhost:4566/000000000000/social-user-events-queue}
+    social-match-events-queue-url: ${AWS_SOCIAL_MATCH_EVENTS_QUEUE_URL:http://localhost:4566/000000000000/social-match-events-queue.fifo}
+
+server:
+  port: 8081
