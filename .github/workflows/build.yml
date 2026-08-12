@@ -3,21 +3,12 @@ name: SonarCloud Analysis
 on:
   push:
     branches:
-      - main
-      - master
       - development
-      - prod
-      - production
 
   pull_request:
     branches:
-      - main
-      - master
       - development
-      - prod
-      - production
     types: [opened, synchronize, reopened]
-
 jobs:
   build:
     name: Build and analyze
