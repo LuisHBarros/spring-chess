@@ -6,6 +6,8 @@ This repository contains the microservices and infrastructure for the Chess plat
 
 - [**Authentication Microservice (`auth`)**](./auth/README.md): Spring Boot 3 DDD Auth service with LocalStack RDS (PostgreSQL), AWS SNS/SQS messaging, Redis, MailHog, JWT, and GitHub Actions CI.
 - [**Social Microservice (`social`)**](./social/README.md): Spring Boot 3 DDD Social Interactions & Guilds service with LocalStack RDS (PostgreSQL) and AWS SNS/SQS messaging.
+- [**Chat Microservice (`chat`)**](./chat/README.md): Spring Boot 3 DDD Chat service for Real-Time Direct Messaging, Group Chats, Guild Channels, and Match Messaging.
+- [**Game Microservice (`game`)**](./game/README.md): Spring Boot 3 DDD Game service for Chess logic, Move validation, Board states, and DynamoDB move histories.
 - [**Observability Service (`observation`)**](./observation/README.md): Full telemetry LGTM stack with Prometheus, Grafana, Grafana Tempo (LocalStack S3 backend), Loki, and Promtail.
 
 ---
