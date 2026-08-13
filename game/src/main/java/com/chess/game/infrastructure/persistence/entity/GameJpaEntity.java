@@ -7,8 +7,10 @@ import com.chess.game.domain.model.GameClock;
 import com.chess.game.domain.model.GameId;
 import com.chess.game.domain.model.GameResult;
 import com.chess.game.domain.model.GameStatus;
+import com.chess.game.domain.model.Move;
 import com.chess.game.domain.model.PlayerId;
 import com.chess.game.domain.model.Position;
+import com.chess.game.infrastructure.persistence.GameStateSerializer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,7 +19,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -118,8 +120,8 @@ public class GameJpaEntity {
                 game.getGameClock().getIncrementSeconds(),
                 game.getGameClock().getWhiteTimeRemainingMs(),
                 game.getGameClock().getBlackTimeRemainingMs(),
-                "{}",
-                "[]",
+                GameStateSerializer.serializeBoard(game.getBoard()),
+                GameStateSerializer.serializeMoves(game.moveHistory()),
                 game.getEnPassantTarget() != null ? game.getEnPassantTarget().toAlgebraic() : null,
                 game.getCreatedAt(),
                 game.getUpdatedAt()
@@ -139,11 +141,11 @@ public class GameJpaEntity {
                 GameId.from(id),
                 PlayerId.from(whitePlayerId),
                 PlayerId.from(blackPlayerId),
-                Board.create(),
+                GameStateSerializer.deserializeBoard(boardJson),
                 status,
                 result,
                 currentTurn,
-                new ArrayList<>(),
+                GameStateSerializer.deserializeMoves(movesJson),
                 moveCount,
                 halfMoveClock,
                 clock,
