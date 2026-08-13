@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -88,6 +89,39 @@ class SecuritySuiteTest {
 
         // 6th attempt blocked
         assertThrows(RateLimitExceededException.class, () -> rateLimiterService.checkRateLimit(clientIp));
+    }
+
+    @Test
+    @DisplayName("Security: Rate Limiter Fallback - Throws after 5 attempts when Redis is unavailable")
+    void enforceRateLimiterFallbackThreshold() {
+        String clientIp = "10.0.0.1";
+        when(redisTemplate.opsForValue()).thenThrow(new RuntimeException("Redis down"));
+        RateLimiterService fallbackService = new RateLimiterService(redisTemplate, System::currentTimeMillis);
+
+        for (int i = 0; i < 5; i++) {
+            assertDoesNotThrow(() -> fallbackService.checkRateLimit(clientIp));
+        }
+        assertThrows(RateLimitExceededException.class, () -> fallbackService.checkRateLimit(clientIp));
+    }
+
+    @Test
+    @DisplayName("Security: Rate Limiter Fallback - Counter resets after the 60s window expires")
+    void fallbackWindowResetPreventsPermanentLockout() {
+        String clientIp = "10.0.0.2";
+        AtomicLong fakeNow = new AtomicLong(1_000_000L);
+        when(redisTemplate.opsForValue()).thenThrow(new RuntimeException("Redis down"));
+        RateLimiterService fallbackService = new RateLimiterService(redisTemplate, fakeNow::get);
+
+        // Exhaust the 5 allowed attempts
+        for (int i = 0; i < 5; i++) {
+            assertDoesNotThrow(() -> fallbackService.checkRateLimit(clientIp));
+        }
+        // Still blocked within the same window
+        assertThrows(RateLimitExceededException.class, () -> fallbackService.checkRateLimit(clientIp));
+
+        // Advance past the 60s window — count must reset, attempts allowed again
+        fakeNow.addAndGet(61_000L);
+        assertDoesNotThrow(() -> fallbackService.checkRateLimit(clientIp));
     }
 
     @Test
