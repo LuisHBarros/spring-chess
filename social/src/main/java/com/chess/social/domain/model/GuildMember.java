@@ -27,6 +27,10 @@ public class GuildMember {
         this.joinedAt = joinedAt;
     }
 
+    public static GuildMember of(UserId userId, RankId rankId, Instant joinedAt) {
+        return new GuildMember(userId, GuildRole.MEMBER, rankId, Avatar.defaultAvatar(), joinedAt);
+    }
+
     public static GuildMember create(UserId userId, GuildRole role, RankId assignedRankId) {
         return new GuildMember(userId, role, assignedRankId, Avatar.defaultAvatar(), Instant.now());
     }
@@ -37,6 +41,10 @@ public class GuildMember {
 
     public static GuildMember reconstitute(UserId userId, GuildRole role, RankId assignedRankId, Avatar avatar, Instant joinedAt) {
         return new GuildMember(userId, role, assignedRankId, avatar, joinedAt);
+    }
+
+    public GuildMember withRank(RankId newRankId) {
+        return new GuildMember(this.userId, this.role, newRankId, this.avatar, this.joinedAt);
     }
 
     public void updateRole(GuildRole newRole) {
@@ -66,6 +74,10 @@ public class GuildMember {
     }
 
     public RankId getAssignedRankId() {
+        return assignedRankId;
+    }
+
+    public RankId getRankId() {
         return assignedRankId;
     }
 

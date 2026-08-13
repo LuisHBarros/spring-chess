@@ -191,7 +191,13 @@
                         <configuration>
                             <excludes>
                                 <exclude>com/chess/auth/AuthApplication.class</exclude>
-                                <exclude>com/chess/auth/infrastructure/web/dto/*</exclude>
+                                <exclude>com/chess/auth/domain/exception/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/web/dto/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/config/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/messaging/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/email/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/persistence/entity/**</exclude>
+                                <exclude>com/chess/auth/infrastructure/persistence/repository/**</exclude>
                             </excludes>
                             <rules>
                                 <rule>

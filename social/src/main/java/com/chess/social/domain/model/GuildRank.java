@@ -27,6 +27,10 @@ public class GuildRank {
         this.permissions = permissions != null ? EnumSet.copyOf(permissions) : EnumSet.noneOf(RankPermission.class);
     }
 
+    public static GuildRank of(RankId id, RankName name, int priority, Set<RankPermission> permissions) {
+        return new GuildRank(id, name, priority, permissions);
+    }
+
     public static GuildRank create(RankName name, int priority, Set<RankPermission> permissions) {
         return new GuildRank(RankId.generate(), name, priority, permissions);
     }

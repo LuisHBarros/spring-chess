@@ -3,6 +3,7 @@ package com.chess.social.domain;
 import com.chess.social.domain.model.GuildRank;
 import com.chess.social.domain.model.RankId;
 import com.chess.social.domain.model.RankName;
+import com.chess.social.domain.model.RankPermission;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,13 +19,13 @@ class GuildRankTest {
     void shouldCreateGuildRank() {
         RankId id = RankId.from(UUID.randomUUID());
         RankName name = RankName.of("Officer");
-        Set<String> permissions = Set.of("INVITE_MEMBERS", "KICK_MEMBERS");
+        Set<RankPermission> permissions = Set.of(RankPermission.INVITE_MEMBERS, RankPermission.KICK_MEMBERS);
 
         GuildRank rank = GuildRank.of(id, name, 10, permissions);
 
         assertThat(rank.getId()).isEqualTo(id);
         assertThat(rank.getName()).isEqualTo(name);
         assertThat(rank.getPriority()).isEqualTo(10);
-        assertThat(rank.getPermissions()).contains("INVITE_MEMBERS");
+        assertThat(rank.getPermissions()).contains(RankPermission.INVITE_MEMBERS);
     }
 }

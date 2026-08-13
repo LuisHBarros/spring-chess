@@ -25,6 +25,10 @@ public class RsaKeyPairProvider {
     private final RSAPrivateKey privateKey;
     private final RSAPublicKey publicKey;
 
+    public RsaKeyPairProvider() {
+        this(null, null);
+    }
+
     public RsaKeyPairProvider(
             @Value("${app.jwt.private-key:}") String configuredPrivateKey,
             @Value("${app.jwt.public-key:}") String configuredPublicKey
