@@ -42,7 +42,7 @@ class GameTest {
     void shouldMakeLegalMove() {
         Move move = game.makeMove(whitePlayer, Position.fromAlgebraic("e2"), Position.fromAlgebraic("e4"), null);
 
-        assertThat(move.getType()).isEqualTo(MoveType.DOUBLE_PAWN_PUSH);
+        assertThat(move.getMoveType()).isEqualTo(MoveType.DOUBLE_PAWN_PUSH);
         assertThat(game.getCurrentTurn()).isEqualTo(Color.BLACK);
         assertThat(game.getBoard().getPieceAt(Position.fromAlgebraic("e4"))).isPresent();
         assertThat(game.getBoard().getPieceAt(Position.fromAlgebraic("e2"))).isEmpty();
@@ -76,7 +76,7 @@ class GameTest {
         // Now White can castle Kingside e1-g1
         Move castleMove = game.makeMove(whitePlayer, Position.fromAlgebraic("e1"), Position.fromAlgebraic("g1"), null);
 
-        assertThat(castleMove.getType()).isEqualTo(MoveType.CASTLING_KINGSIDE);
+        assertThat(castleMove.getMoveType()).isEqualTo(MoveType.CASTLING_KINGSIDE);
         assertThat(game.getBoard().getPieceAt(Position.fromAlgebraic("g1")).get().getPieceType()).isEqualTo(PieceType.KING);
         assertThat(game.getBoard().getPieceAt(Position.fromAlgebraic("f1")).get().getPieceType()).isEqualTo(PieceType.ROOK);
     }

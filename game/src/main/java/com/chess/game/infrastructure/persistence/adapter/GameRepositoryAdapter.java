@@ -31,12 +31,12 @@ public class GameRepositoryAdapter implements GameRepository {
 
     @Override
     public Optional<Game> findById(GameId id) {
-        return repository.findById(id.value()).map(GameJpaEntity::toDomain);
+        return repository.findById(id.getValue()).map(GameJpaEntity::toDomain);
     }
 
     @Override
     public List<Game> findByPlayerId(PlayerId playerId) {
-        return repository.findAllByPlayerId(playerId.value())
+        return repository.findAllByPlayerId(playerId.getValue())
                 .stream()
                 .map(GameJpaEntity::toDomain)
                 .collect(Collectors.toList());
@@ -52,6 +52,6 @@ public class GameRepositoryAdapter implements GameRepository {
 
     @Override
     public void delete(Game game) {
-        repository.deleteById(game.getId().value());
+        repository.deleteById(game.getId().getValue());
     }
 }

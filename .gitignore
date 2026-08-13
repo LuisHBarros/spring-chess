@@ -21,3 +21,8 @@ Thumbs.db
 .keys/
 *.key
 
+# Agent temporary directories
+.agents/
+PROJECT.md
+
+
