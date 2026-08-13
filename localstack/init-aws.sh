@@ -75,7 +75,7 @@ awslocal sns subscribe --topic-arn "$MATCH_EVENTS_TOPIC_ARN" --protocol sqs --no
 awslocal sns subscribe --topic-arn "$SOCIAL_EVENTS_TOPIC_ARN" --protocol sqs --notification-endpoint "$ANALYTICS_SOCIAL_QUEUE_ARN"
 
 # 6. Initialize RDS PostgreSQL Instances
-echo "Creating RDS PostgreSQL instances: auth-db-instance, social-db-instance, and chat-db-instance..."
+echo "Creating RDS PostgreSQL instances: auth-db-instance, social-db-instance, chat-db-instance, and game-db-instance..."
 awslocal rds create-db-instance \
   --db-instance-identifier auth-db-instance \
   --db-name auth_db \
@@ -98,6 +98,14 @@ awslocal rds create-db-instance \
   --engine postgres \
   --master-username chat_user \
   --master-user-password chat_pass \
+  --allocated-storage 20 || true
+
+awslocal rds create-db-instance \
+  --db-instance-identifier game-db-instance \
+  --db-name game_db \
+  --engine postgres \
+  --master-username game_user \
+  --master-user-password game_pass \
   --allocated-storage 20 || true
 
 # 7. Create DynamoDB Tables
