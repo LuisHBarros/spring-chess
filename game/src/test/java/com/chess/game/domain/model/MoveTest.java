@@ -25,7 +25,7 @@ class MoveTest {
     void shouldSupportPromotionMove() {
         Position from = Position.fromAlgebraic("e7");
         Position to = Position.fromAlgebraic("e8");
-        Move move = Move.ofPromotion(from, to, PieceType.QUEEN);
+        Move move = Move.promotion(from, to, PieceType.QUEEN, null);
 
         assertThat(move.getMoveType()).isEqualTo(MoveType.PAWN_PROMOTION);
         assertThat(move.getPromotionPieceType()).isEqualTo(PieceType.QUEEN);

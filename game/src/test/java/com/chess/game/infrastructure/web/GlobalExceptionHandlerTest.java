@@ -17,8 +17,8 @@ class GlobalExceptionHandlerTest {
         GameNotFoundException ex = new GameNotFoundException("Game not found");
         ApiResponseDto<Void> response = handler.handleGameNotFoundException(ex);
 
-        assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getMessage()).isEqualTo("Game not found");
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).isEqualTo("Game not found");
     }
 
     @Test
@@ -27,8 +27,8 @@ class GlobalExceptionHandlerTest {
         IllegalArgumentException ex = new IllegalArgumentException("Invalid argument");
         ApiResponseDto<Void> response = handler.handleIllegalArgumentException(ex);
 
-        assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getMessage()).isEqualTo("Invalid argument");
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).isEqualTo("Invalid argument");
     }
 
     @Test
@@ -37,7 +37,7 @@ class GlobalExceptionHandlerTest {
         Exception ex = new Exception("Database failure");
         ApiResponseDto<Void> response = handler.handleGeneralException(ex);
 
-        assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getMessage()).contains("An unexpected error occurred");
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).contains("An unexpected error occurred");
     }
 }
