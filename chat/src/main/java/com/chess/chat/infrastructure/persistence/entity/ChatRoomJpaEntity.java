@@ -45,6 +45,9 @@ public class ChatRoomJpaEntity {
     @Column(name = "target_reference_id")
     private String targetReferenceId;
 
+    @Column(name = "direct_chat_key", unique = true, length = 73)
+    private String directChatKey;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "chat_room_participants", joinColumns = @JoinColumn(name = "chat_room_id"))
     private List<ChatParticipantJpaEntity> participants = new ArrayList<>();
@@ -68,6 +71,7 @@ public class ChatRoomJpaEntity {
             String title,
             UUID creatorId,
             String targetReferenceId,
+            String directChatKey,
             List<ChatParticipantJpaEntity> participants,
             ChatRoomStatus status,
             Instant createdAt,
@@ -77,6 +81,7 @@ public class ChatRoomJpaEntity {
         this.title = title;
         this.creatorId = creatorId;
         this.targetReferenceId = targetReferenceId;
+        this.directChatKey = directChatKey;
         this.participants = participants != null ? participants : new ArrayList<>();
         this.status = status;
         this.createdAt = createdAt;
@@ -88,12 +93,20 @@ public class ChatRoomJpaEntity {
                 .map(ChatParticipantJpaEntity::fromDomain)
                 .collect(Collectors.toList());
 
+        String directChatKey = chatRoom.getType() == ChatRoomType.DIRECT
+                ? chatRoom.getParticipants().stream()
+                        .map(p -> p.getUserId().getValue().toString())
+                        .sorted()
+                        .collect(Collectors.joining("#"))
+                : null;
+
         return new ChatRoomJpaEntity(
                 chatRoom.getId().getValue(),
                 chatRoom.getType(),
                 chatRoom.getTitle() != null ? chatRoom.getTitle().getValue() : null,
                 chatRoom.getCreatorId().getValue(),
                 chatRoom.getTargetReferenceId(),
+                directChatKey,
                 participantEntities,
                 chatRoom.getStatus(),
                 chatRoom.getCreatedAt(),

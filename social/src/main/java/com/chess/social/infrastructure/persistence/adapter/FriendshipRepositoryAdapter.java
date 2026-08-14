@@ -25,7 +25,7 @@ public class FriendshipRepositoryAdapter implements FriendshipRepository {
     @Override
     public Friendship save(Friendship friendship) {
         FriendshipJpaEntity entity = FriendshipJpaEntity.fromDomain(friendship);
-        FriendshipJpaEntity saved = repository.save(entity);
+        FriendshipJpaEntity saved = repository.saveAndFlush(entity);
         return saved.toDomain();
     }
 

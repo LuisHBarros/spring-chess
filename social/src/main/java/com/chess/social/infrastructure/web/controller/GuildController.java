@@ -11,6 +11,7 @@ import com.chess.social.domain.model.GuildName;
 import com.chess.social.domain.model.GuildRank;
 import com.chess.social.domain.model.RankId;
 import com.chess.social.domain.model.RankName;
+import com.chess.social.domain.model.RankPermission;
 import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.GuildRepository;
 import com.chess.social.domain.service.GuildDomainService;
@@ -226,5 +227,20 @@ public class GuildController {
         );
 
         return ResponseEntity.ok(ApiResponseDto.success("Guild deleted successfully", null));
+    }
+
+    @GetMapping("/{id}/members/{userId}/permissions")
+    @Operation(summary = "Check guild member permission", description = "Returns whether the specified member has a given rank permission in the guild")
+    public ResponseEntity<ApiResponseDto<Boolean>> checkMemberPermission(
+            @PathVariable("id") UUID guildId,
+            @PathVariable("userId") UUID userId,
+            @RequestParam("permission") String permission) {
+        boolean hasPermission = guildDomainService.hasPermission(
+                UserId.from(userId),
+                GuildId.from(guildId),
+                RankPermission.valueOf(permission)
+        );
+
+        return ResponseEntity.ok(ApiResponseDto.success("Permission checked successfully", hasPermission));
     }
 }

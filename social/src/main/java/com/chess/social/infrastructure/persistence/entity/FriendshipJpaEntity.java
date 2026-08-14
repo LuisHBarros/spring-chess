@@ -34,6 +34,9 @@ public class FriendshipJpaEntity {
     @Column(name = "action_user_id", nullable = false)
     private UUID actionUserId;
 
+    @Column(name = "friendship_pair_key", nullable = false, unique = true, length = 100)
+    private String friendshipPairKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -49,6 +52,7 @@ public class FriendshipJpaEntity {
             UUID addresseeId,
             FriendshipStatus status,
             UUID actionUserId,
+            String friendshipPairKey,
             Instant createdAt,
             Instant updatedAt) {
         this.id = id;
@@ -56,17 +60,25 @@ public class FriendshipJpaEntity {
         this.addresseeId = addresseeId;
         this.status = status;
         this.actionUserId = actionUserId;
+        this.friendshipPairKey = friendshipPairKey;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
     public static FriendshipJpaEntity fromDomain(Friendship friendship) {
+        UUID requester = friendship.getRequesterId().getValue();
+        UUID addressee = friendship.getAddresseeId().getValue();
+        String first = requester.toString();
+        String second = addressee.toString();
+        String pairKey = first.compareTo(second) <= 0 ? first + "#" + second : second + "#" + first;
+
         return new FriendshipJpaEntity(
                 friendship.getId().getValue(),
-                friendship.getRequesterId().getValue(),
-                friendship.getAddresseeId().getValue(),
+                requester,
+                addressee,
                 friendship.getStatus(),
                 friendship.getActionUserId().getValue(),
+                pairKey,
                 friendship.getCreatedAt(),
                 friendship.getUpdatedAt()
         );

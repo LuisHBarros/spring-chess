@@ -13,7 +13,9 @@ import com.chess.chat.domain.model.MessageStatus;
 import com.chess.chat.domain.model.MessageType;
 import com.chess.chat.domain.model.RoomTitle;
 import com.chess.chat.domain.model.UserId;
+import com.chess.chat.domain.model.ChatRoomType;
 import com.chess.chat.domain.port.ChatEventPublisherPort;
+import com.chess.chat.domain.port.GuildPermissionPort;
 import com.chess.chat.domain.repository.ChatRoomRepository;
 import com.chess.chat.domain.repository.MessageRepository;
 import com.chess.chat.domain.service.MessageDomainService;
@@ -45,6 +47,9 @@ class MessageDomainServiceTest {
     @Mock
     private ChatEventPublisherPort eventPublisher;
 
+    @Mock
+    private GuildPermissionPort guildPermissionPort;
+
     private MessageDomainService messageDomainService;
     private UserId user1;
     private UserId user2;
@@ -53,7 +58,7 @@ class MessageDomainServiceTest {
 
     @BeforeEach
     void setUp() {
-        messageDomainService = new MessageDomainService(chatRoomRepository, messageRepository, eventPublisher);
+        messageDomainService = new MessageDomainService(chatRoomRepository, messageRepository, eventPublisher, guildPermissionPort);
         user1 = UserId.generate();
         user2 = UserId.generate();
         outsider = UserId.generate();
@@ -72,6 +77,30 @@ class MessageDomainServiceTest {
         assertEquals(user1, message.getSenderId());
         assertEquals("e4 e5", message.getContent().getValue());
         verify(eventPublisher).publishChatEvent(eq("MESSAGE_SENT"), anyString(), anyMap());
+    }
+
+    @Test
+    void shouldSendMessageInGuildChannelWhenHasChatAccess() {
+        ChatRoom guildRoom = ChatRoom.createGuildChannel(RoomTitle.of("Guild Chat"), user1, "guild-123");
+        when(chatRoomRepository.findById(guildRoom.getId())).thenReturn(Optional.of(guildRoom));
+        when(guildPermissionPort.hasChatAccess(user1, "guild-123")).thenReturn(true);
+        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Message message = messageDomainService.sendMessage(guildRoom.getId(), user1, MessageContent.of("Hello guild"));
+
+        assertNotNull(message);
+        assertEquals(ChatRoomType.GUILD, guildRoom.getType());
+        verify(guildPermissionPort).hasChatAccess(user1, "guild-123");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSenderLacksGuildChatAccess() {
+        ChatRoom guildRoom = ChatRoom.createGuildChannel(RoomTitle.of("Guild Chat"), user1, "guild-123");
+        when(chatRoomRepository.findById(guildRoom.getId())).thenReturn(Optional.of(guildRoom));
+        when(guildPermissionPort.hasChatAccess(user1, "guild-123")).thenReturn(false);
+
+        assertThrows(UnauthorizedChatOperationException.class, () ->
+                messageDomainService.sendMessage(guildRoom.getId(), user1, MessageContent.of("Hello")));
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.chess.social.infrastructure.web;
 
 import com.chess.social.domain.exception.CategoryNotFoundException;
 import com.chess.social.domain.exception.DomainException;
+import com.chess.social.domain.exception.DuplicateCategoryException;
+import com.chess.social.domain.exception.DuplicateRankException;
 import com.chess.social.domain.exception.FriendshipAlreadyExistsException;
 import com.chess.social.domain.exception.FriendshipNotFoundException;
 import com.chess.social.domain.exception.GuildMemberAlreadyExistsException;
@@ -39,7 +41,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             FriendshipAlreadyExistsException.class,
-            GuildMemberAlreadyExistsException.class
+            GuildMemberAlreadyExistsException.class,
+            DuplicateCategoryException.class,
+            DuplicateRankException.class
     })
     public ResponseEntity<ApiResponseDto<Void>> handleConflictExceptions(DomainException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

@@ -16,9 +16,12 @@ import com.chess.social.domain.model.RankName;
 import com.chess.social.domain.model.RankPermission;
 import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.GuildRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
+@Transactional
 public class GuildDomainService {
     private final GuildRepository guildRepository;
 
@@ -39,7 +42,11 @@ public class GuildDomainService {
         }
 
         Guild guild = Guild.create(name, description, creatorId, avatar);
-        return guildRepository.save(guild);
+        try {
+            return guildRepository.save(guild);
+        } catch (DataIntegrityViolationException ex) {
+            throw new DuplicateCategoryException("A guild with name '" + name.getValue() + "' already exists");
+        }
     }
 
     public Guild updateGuildAvatar(UserId actorId, GuildId guildId, Avatar newAvatar) {
@@ -109,6 +116,11 @@ public class GuildDomainService {
         Guild guild = getGuildOrThrow(guildId);
         guild.transferOwnership(actorId, actorId); // Verifies actorId is owner
         guildRepository.delete(guild);
+    }
+
+    public boolean hasPermission(UserId userId, GuildId guildId, RankPermission permission) {
+        Guild guild = getGuildOrThrow(guildId);
+        return guild.hasPermission(userId, permission);
     }
 
     private Guild getGuildOrThrow(GuildId guildId) {

@@ -4,8 +4,9 @@ import com.chess.social.domain.model.Guild;
 import com.chess.social.domain.model.GuildId;
 import com.chess.social.domain.model.GuildName;
 import com.chess.social.domain.model.UserId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface GuildRepository {
@@ -17,7 +18,7 @@ public interface GuildRepository {
 
     boolean existsByName(GuildName name);
 
-    List<Guild> findAllByMemberId(UserId userId);
+    Page<Guild> findAllByMemberId(UserId userId, Pageable pageable);
 
     void delete(Guild guild);
 }

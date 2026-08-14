@@ -177,6 +177,41 @@ class GuildTest {
     }
 
     @Test
+    @DisplayName("Should allow member with KICK_MEMBERS permission to remove another member")
+    void shouldAllowMemberWithKickPermissionToRemoveMember() {
+        UserId ownerId = UserId.generate();
+        UserId moderatorId = UserId.generate();
+        UserId memberId = UserId.generate();
+        Guild guild = Guild.create(GuildName.of("Moderated Guild"), "Desc", ownerId);
+
+        GuildCategory general = guild.getCategories().get(0);
+        GuildRank moderatorRank = general.addRank(RankName.of("Moderator"), 5, EnumSet.of(RankPermission.KICK_MEMBERS));
+
+        guild.addMember(ownerId, moderatorId, moderatorRank.getId());
+        guild.addMember(ownerId, memberId, null);
+
+        guild.removeMember(moderatorId, memberId);
+
+        assertFalse(guild.isMember(memberId));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when member without KICK_MEMBERS permission tries to remove another member")
+    void shouldThrowWhenMemberWithoutKickPermissionRemovesMember() {
+        UserId ownerId = UserId.generate();
+        UserId regularMemberId = UserId.generate();
+        UserId anotherMemberId = UserId.generate();
+        Guild guild = Guild.create(GuildName.of("Regular Guild"), "Desc", ownerId);
+
+        guild.addMember(ownerId, regularMemberId, null);
+        guild.addMember(ownerId, anotherMemberId, null);
+
+        assertThrows(UnauthorizedGuildOperationException.class, () ->
+                guild.removeMember(regularMemberId, anotherMemberId)
+        );
+    }
+
+    @Test
     @DisplayName("Should allow authorized manager to update guild avatar")
     void shouldUpdateGuildAvatar() {
         UserId ownerId = UserId.generate();

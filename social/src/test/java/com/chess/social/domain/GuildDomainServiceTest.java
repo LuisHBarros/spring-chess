@@ -15,6 +15,7 @@ import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.GuildRepository;
 import com.chess.social.domain.service.GuildDomainService;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +71,21 @@ class GuildDomainServiceTest {
                 service.createGuild(name, "Description", creator)
         );
         verify(guildRepository, never()).save(any(Guild.class));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when concurrent guild creation causes unique name violation")
+    void shouldThrowOnConcurrentGuildNameViolation() {
+        GuildName name = GuildName.of("Race Guild");
+        UserId creator = UserId.generate();
+
+        when(guildRepository.existsByName(name)).thenReturn(false);
+        when(guildRepository.save(any(Guild.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        assertThrows(DuplicateCategoryException.class, () ->
+                service.createGuild(name, "Description", creator)
+        );
     }
 
     @Test

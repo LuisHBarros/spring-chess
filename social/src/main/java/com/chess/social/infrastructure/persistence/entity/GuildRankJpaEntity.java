@@ -32,7 +32,7 @@ public class GuildRankJpaEntity {
     @Column(name = "priority", nullable = false)
     private int priority;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "guild_rank_permissions", joinColumns = @JoinColumn(name = "rank_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "permission")

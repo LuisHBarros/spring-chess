@@ -45,14 +45,14 @@ class ChatRoomRepositoryAdapterTest {
 
     @Test
     void shouldSaveChatRoom() {
-        when(repository.save(any(ChatRoomJpaEntity.class))).thenReturn(entity);
+        when(repository.saveAndFlush(any(ChatRoomJpaEntity.class))).thenReturn(entity);
 
         ChatRoom savedRoom = adapter.save(room);
 
         assertNotNull(savedRoom);
         assertEquals(room.getId(), savedRoom.getId());
         assertEquals(room.getType(), savedRoom.getType());
-        verify(repository).save(any(ChatRoomJpaEntity.class));
+        verify(repository).saveAndFlush(any(ChatRoomJpaEntity.class));
     }
 
     @Test

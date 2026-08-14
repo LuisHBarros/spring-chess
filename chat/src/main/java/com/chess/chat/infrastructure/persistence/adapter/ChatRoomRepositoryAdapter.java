@@ -24,7 +24,7 @@ public class ChatRoomRepositoryAdapter implements ChatRoomRepository {
     @Override
     public ChatRoom save(ChatRoom chatRoom) {
         ChatRoomJpaEntity entity = ChatRoomJpaEntity.fromDomain(chatRoom);
-        ChatRoomJpaEntity saved = repository.save(entity);
+        ChatRoomJpaEntity saved = repository.saveAndFlush(entity);
         return saved.toDomain();
     }
 

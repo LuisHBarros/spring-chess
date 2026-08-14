@@ -14,7 +14,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -31,9 +33,9 @@ public class GuildCategoryJpaEntity {
     @Column(name = "description")
     private String description;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    private List<GuildRankJpaEntity> ranks = new ArrayList<>();
+    private Set<GuildRankJpaEntity> ranks = new LinkedHashSet<>();
 
     public GuildCategoryJpaEntity() {
     }
@@ -42,7 +44,7 @@ public class GuildCategoryJpaEntity {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.ranks = ranks != null ? ranks : new ArrayList<>();
+        this.ranks = ranks != null ? new LinkedHashSet<>(ranks) : new LinkedHashSet<>();
     }
 
     public static GuildCategoryJpaEntity fromDomain(GuildCategory category) {
@@ -95,11 +97,11 @@ public class GuildCategoryJpaEntity {
         this.description = description;
     }
 
-    public List<GuildRankJpaEntity> getRanks() {
+    public Set<GuildRankJpaEntity> getRanks() {
         return ranks;
     }
 
-    public void setRanks(List<GuildRankJpaEntity> ranks) {
-        this.ranks = ranks;
+    public void setRanks(Set<GuildRankJpaEntity> ranks) {
+        this.ranks = ranks != null ? new LinkedHashSet<>(ranks) : new LinkedHashSet<>();
     }
 }

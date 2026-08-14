@@ -8,9 +8,12 @@ import com.chess.social.domain.model.FriendshipId;
 import com.chess.social.domain.model.FriendshipStatus;
 import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.FriendshipRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+@Transactional
 public class FriendshipDomainService {
     private final FriendshipRepository friendshipRepository;
 
@@ -35,7 +38,11 @@ public class FriendshipDomainService {
         }
 
         Friendship friendship = Friendship.request(requesterId, addresseeId);
-        return friendshipRepository.save(friendship);
+        try {
+            return friendshipRepository.save(friendship);
+        } catch (DataIntegrityViolationException ex) {
+            throw new FriendshipAlreadyExistsException("A friend request or friendship already exists between these users");
+        }
     }
 
     public Friendship acceptFriendRequest(UserId addresseeId, FriendshipId friendshipId) {
@@ -66,7 +73,11 @@ public class FriendshipDomainService {
             friendship.block(actorId);
         }
 
-        return friendshipRepository.save(friendship);
+        try {
+            return friendshipRepository.save(friendship);
+        } catch (DataIntegrityViolationException ex) {
+            throw new FriendshipAlreadyExistsException("A friendship or block record already exists between these users");
+        }
     }
 
     public Friendship unblockUser(UserId actorId, UserId targetUserId) {
