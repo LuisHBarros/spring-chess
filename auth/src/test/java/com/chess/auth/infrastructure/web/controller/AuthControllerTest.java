@@ -73,7 +73,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /register - Should return 201 Created with JWT tokens")
     void register_ShouldReturn201WithTokens() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("test_user", "test@chess.com", "password123");
+        RegisterRequestDto dto = new RegisterRequestDto("test_user", "test@chess.com", "Password123!");
         when(registrationService.register(any(), any(), any())).thenReturn(testUser);
         when(tokenAuthService.generateTokens(testUser)).thenReturn(testAuthToken);
 
@@ -103,7 +103,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /login - Should return 200 OK with JWT tokens")
     void login_ShouldReturn200WithTokens() throws Exception {
-        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "password123");
+        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "Password123!");
         when(loginService.loginWithEmail(any(), any())).thenReturn(testUser);
         when(tokenAuthService.generateTokens(testUser)).thenReturn(testAuthToken);
 
@@ -117,7 +117,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /login - Should return 429 Too Many Requests when rate limit exceeded")
     void login_ShouldReturn429WhenRateLimited() throws Exception {
-        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "password123");
+        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "Password123!");
         doThrow(new RateLimitExceededException("Too many login attempts. Please try again in 1 minute."))
                 .when(rateLimiterService).checkRateLimit(any());
 
@@ -131,7 +131,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /login - Should return 401 Unauthorized with generic message on login failure")
     void login_ShouldReturn401WithGenericMessage() throws Exception {
-        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "wrongPass123");
+        LoginRequestDto dto = new LoginRequestDto("test@chess.com", null, "WrongPassword123!");
         when(loginService.loginWithEmail(any(), any()))
                 .thenThrow(new InvalidCredentialsException("Invalid credentials"));
 
