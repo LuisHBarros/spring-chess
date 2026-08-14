@@ -7,7 +7,10 @@ import com.chess.auth.domain.model.User;
 import com.chess.auth.domain.model.Username;
 import com.chess.auth.domain.port.PasswordEncoder;
 import com.chess.auth.domain.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class UserRegistrationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -33,6 +36,10 @@ public class UserRegistrationService {
 
         Password hashedPassword = passwordEncoder.encode(rawPassword);
         User newUser = User.create(username, email, hashedPassword);
-        return userRepository.save(newUser);
+        try {
+            return userRepository.save(newUser);
+        } catch (DataIntegrityViolationException ex) {
+            throw new UserAlreadyExistsException("Email or username is already in use");
+        }
     }
 }

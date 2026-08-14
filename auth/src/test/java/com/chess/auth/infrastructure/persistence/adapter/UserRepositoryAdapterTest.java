@@ -33,10 +33,12 @@ class UserRepositoryAdapterTest {
         User savedUser = userRepositoryAdapter.save(user);
         assertNotNull(savedUser);
         assertEquals(user.getId(), savedUser.getId());
+        assertEquals(0, savedUser.getRefreshTokenVersion());
 
         Optional<User> foundByEmail = userRepositoryAdapter.findByEmail(email);
         assertTrue(foundByEmail.isPresent());
         assertEquals(username, foundByEmail.get().getUsername());
+        assertEquals(0, foundByEmail.get().getRefreshTokenVersion());
 
         Optional<User> foundByUsername = userRepositoryAdapter.findByUsername(username);
         assertTrue(foundByUsername.isPresent());

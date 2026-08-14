@@ -23,6 +23,9 @@ public final class Password {
         if (rawPassword.length() < 8) {
             throw new InvalidPasswordException("Password must be at least 8 characters long");
         }
+        if (!rawPassword.matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$")) {
+            throw new InvalidPasswordException("Password must contain at least one uppercase letter, one digit, and one special character");
+        }
         return new Password(rawPassword, false);
     }
 

@@ -10,8 +10,9 @@ public class User {
     private Password password;
     private final Instant createdAt;
     private Instant lastSeenAt;
+    private int refreshTokenVersion;
 
-    private User(UserId id, Username username, Email email, Password password, Instant createdAt, Instant lastSeenAt) {
+    private User(UserId id, Username username, Email email, Password password, Instant createdAt, Instant lastSeenAt, int refreshTokenVersion) {
         if (id == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
@@ -37,15 +38,20 @@ public class User {
         this.password = password;
         this.createdAt = createdAt;
         this.lastSeenAt = lastSeenAt;
+        this.refreshTokenVersion = refreshTokenVersion;
     }
 
     public static User create(Username username, Email email, Password hashedPassword) {
         Instant now = Instant.now();
-        return new User(UserId.generate(), username, email, hashedPassword, now, now);
+        return new User(UserId.generate(), username, email, hashedPassword, now, now, 0);
     }
 
     public static User reconstitute(UserId id, Username username, Email email, Password password, Instant createdAt, Instant lastSeenAt) {
-        return new User(id, username, email, password, createdAt, lastSeenAt);
+        return reconstitute(id, username, email, password, createdAt, lastSeenAt, 0);
+    }
+
+    public static User reconstitute(UserId id, Username username, Email email, Password password, Instant createdAt, Instant lastSeenAt, int refreshTokenVersion) {
+        return new User(id, username, email, password, createdAt, lastSeenAt, refreshTokenVersion);
     }
 
     public void updateLastSeenAt(Instant timestamp) {
@@ -60,6 +66,15 @@ public class User {
             throw new IllegalArgumentException("Password cannot be null");
         }
         this.password = newHashedPassword;
+        this.refreshTokenVersion++;
+    }
+
+    public void incrementRefreshTokenVersion() {
+        this.refreshTokenVersion++;
+    }
+
+    public int getRefreshTokenVersion() {
+        return refreshTokenVersion;
     }
 
     public UserId getId() {

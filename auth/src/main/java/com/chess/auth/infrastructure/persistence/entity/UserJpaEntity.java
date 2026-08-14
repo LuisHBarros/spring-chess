@@ -32,16 +32,20 @@ public class UserJpaEntity {
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 
+    @Column(name = "refresh_token_version", nullable = false)
+    private int refreshTokenVersion;
+
     public UserJpaEntity() {
     }
 
-    public UserJpaEntity(UUID id, String username, String email, String password, Instant createdAt, Instant lastSeenAt) {
+    public UserJpaEntity(UUID id, String username, String email, String password, Instant createdAt, Instant lastSeenAt, int refreshTokenVersion) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
         this.createdAt = createdAt;
         this.lastSeenAt = lastSeenAt;
+        this.refreshTokenVersion = refreshTokenVersion;
     }
 
     public static UserJpaEntity fromDomain(User user) {
@@ -51,7 +55,8 @@ public class UserJpaEntity {
                 user.getEmail().getValue(),
                 user.getPassword().getValue(),
                 user.getCreatedAt(),
-                user.getLastSeenAt()
+                user.getLastSeenAt(),
+                user.getRefreshTokenVersion()
         );
     }
 
@@ -62,7 +67,8 @@ public class UserJpaEntity {
                 new Email(this.email),
                 Password.fromHash(this.password),
                 this.createdAt,
-                this.lastSeenAt
+                this.lastSeenAt,
+                this.refreshTokenVersion
         );
     }
 
@@ -112,5 +118,13 @@ public class UserJpaEntity {
 
     public void setLastSeenAt(Instant lastSeenAt) {
         this.lastSeenAt = lastSeenAt;
+    }
+
+    public int getRefreshTokenVersion() {
+        return refreshTokenVersion;
+    }
+
+    public void setRefreshTokenVersion(int refreshTokenVersion) {
+        this.refreshTokenVersion = refreshTokenVersion;
     }
 }

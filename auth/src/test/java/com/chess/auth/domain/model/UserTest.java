@@ -24,6 +24,7 @@ class UserTest {
         assertEquals(password, user.getPassword());
         assertNotNull(user.getCreatedAt());
         assertNotNull(user.getLastSeenAt());
+        assertEquals(0, user.getRefreshTokenVersion());
     }
 
     @Test
@@ -44,8 +45,8 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("Should update user password")
-    void shouldUpdatePassword() {
+    @DisplayName("Should update user password and invalidate refresh tokens")
+    void shouldUpdatePasswordAndInvalidateRefreshTokens() {
         User user = User.create(
                 new Username("player1"),
                 new Email("p1@chess.com"),
@@ -56,6 +57,7 @@ class UserTest {
         user.changePassword(newHash);
 
         assertEquals(newHash, user.getPassword());
+        assertEquals(1, user.getRefreshTokenVersion());
     }
 
     @Test
@@ -68,7 +70,7 @@ class UserTest {
         Instant created = Instant.now().minusSeconds(3600);
         Instant lastSeen = Instant.now();
 
-        User user = User.reconstitute(id, username, email, password, created, lastSeen);
+        User user = User.reconstitute(id, username, email, password, created, lastSeen, 7);
 
         assertEquals(id, user.getId());
         assertEquals(username, user.getUsername());
@@ -76,5 +78,6 @@ class UserTest {
         assertEquals(password, user.getPassword());
         assertEquals(created, user.getCreatedAt());
         assertEquals(lastSeen, user.getLastSeenAt());
+        assertEquals(7, user.getRefreshTokenVersion());
     }
 }

@@ -11,8 +11,8 @@ class PasswordTest {
     @Test
     @DisplayName("Should create raw Password when valid")
     void shouldCreateRawPassword() {
-        Password password = Password.fromRaw("strongPassword123");
-        assertEquals("strongPassword123", password.getValue());
+        Password password = Password.fromRaw("StrongPassword123!");
+        assertEquals("StrongPassword123!", password.getValue());
         assertFalse(password.isHashed());
     }
 
@@ -40,12 +40,20 @@ class PasswordTest {
     }
 
     @Test
+    @DisplayName("Should throw InvalidPasswordException for weak raw passwords")
+    void shouldThrowForWeakPasswords() {
+        assertThrows(InvalidPasswordException.class, () -> Password.fromRaw("alllowercase1!")); // no uppercase
+        assertThrows(InvalidPasswordException.class, () -> Password.fromRaw("AllLowercase!")); // no digit
+        assertThrows(InvalidPasswordException.class, () -> Password.fromRaw("AllLowercase1")); // no special
+    }
+
+    @Test
     @DisplayName("Should obscure password value in toString()")
     void shouldObscureToString() {
-        Password raw = Password.fromRaw("secretPass123");
+        Password raw = Password.fromRaw("SecretPass123!");
         Password hash = Password.fromHash("someHashValue");
 
-        assertFalse(raw.toString().contains("secretPass123"));
+        assertFalse(raw.toString().contains("SecretPass123!"));
         assertFalse(hash.toString().contains("someHashValue"));
     }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,8 +40,8 @@ class UserRegistrationServiceTest {
     void shouldSuccessfullyRegisterUser() {
         Username username = new Username("new_player");
         Email email = new Email("player@chess.com");
-        Password rawPassword = Password.fromRaw("securePass123");
-        Password hashedPassword = Password.fromHash("hashed_securePass123");
+        Password rawPassword = Password.fromRaw("SecurePass123!");
+        Password hashedPassword = Password.fromHash("hashed_SecurePass123!");
 
         when(userRepository.existsByEmail(email)).thenReturn(false);
         when(userRepository.existsByUsername(username)).thenReturn(false);
@@ -62,7 +63,7 @@ class UserRegistrationServiceTest {
     void shouldThrowExceptionWhenEmailExists() {
         Username username = new Username("new_player");
         Email email = new Email("existing@chess.com");
-        Password rawPassword = Password.fromRaw("securePass123");
+        Password rawPassword = Password.fromRaw("SecurePass123!");
 
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
@@ -78,7 +79,7 @@ class UserRegistrationServiceTest {
     void shouldThrowExceptionWhenUsernameTaken() {
         Username username = new Username("existing_user");
         Email email = new Email("new@chess.com");
-        Password rawPassword = Password.fromRaw("securePass123");
+        Password rawPassword = Password.fromRaw("SecurePass123!");
 
         when(userRepository.existsByEmail(email)).thenReturn(false);
         when(userRepository.existsByUsername(username)).thenReturn(true);
@@ -88,5 +89,23 @@ class UserRegistrationServiceTest {
         );
 
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Should throw UserAlreadyExistsException on unique constraint violation")
+    void shouldThrowUserAlreadyExistsOnUniqueConstraintViolation() {
+        Username username = new Username("racing_user");
+        Email email = new Email("race@chess.com");
+        Password rawPassword = Password.fromRaw("SecurePass123!");
+        Password hashedPassword = Password.fromHash("hashed_race");
+
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(userRepository.existsByUsername(username)).thenReturn(false);
+        when(passwordEncoder.encode(rawPassword)).thenReturn(hashedPassword);
+        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("unique constraint"));
+
+        assertThrows(UserAlreadyExistsException.class, () ->
+                registrationService.register(username, email, rawPassword)
+        );
     }
 }

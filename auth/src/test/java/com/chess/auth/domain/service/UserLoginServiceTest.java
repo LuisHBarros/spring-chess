@@ -44,7 +44,7 @@ class UserLoginServiceTest {
         username = new Username("player_one");
         email = new Email("player1@chess.com");
         hashedPassword = Password.fromHash("hashedPassword123");
-        rawPassword = Password.fromRaw("myPassword123");
+        rawPassword = Password.fromRaw("MyPassword123!");
         existingUser = User.create(username, email, hashedPassword);
     }
 

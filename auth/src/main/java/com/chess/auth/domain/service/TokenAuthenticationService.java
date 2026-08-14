@@ -44,10 +44,17 @@ public class TokenAuthenticationService {
             throw new InvalidTokenException("Invalid or expired refresh token");
         }
 
+        int tokenVersion = tokenProvider.extractRefreshTokenVersion(refreshToken);
         Email email = tokenProvider.extractEmailFromRefreshToken(refreshToken);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User associated with refresh token not found"));
 
+        if (tokenVersion != user.getRefreshTokenVersion()) {
+            throw new InvalidTokenException("Refresh token has been revoked");
+        }
+
+        user.incrementRefreshTokenVersion();
+        userRepository.save(user);
         return tokenProvider.generateTokens(user);
     }
 

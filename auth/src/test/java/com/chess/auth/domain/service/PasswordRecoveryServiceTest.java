@@ -85,8 +85,8 @@ class PasswordRecoveryServiceTest {
     @DisplayName("Should reset password when token is valid")
     void shouldResetPasswordSuccessfully() {
         String token = "valid-token";
-        Password newRawPassword = Password.fromRaw("newSecretPass123");
-        Password newHashedPassword = Password.fromHash("hashed_newSecretPass123");
+        Password newRawPassword = Password.fromRaw("NewSecretPass123!");
+        Password newHashedPassword = Password.fromHash("hashed_NewSecretPass123!");
 
         when(tokenService.validateToken(token, email)).thenReturn(true);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
@@ -103,7 +103,7 @@ class PasswordRecoveryServiceTest {
     @DisplayName("Should throw InvalidTokenException when token is invalid or expired")
     void shouldThrowExceptionWhenTokenInvalid() {
         String invalidToken = "invalid-token";
-        Password newRawPassword = Password.fromRaw("newSecretPass123");
+        Password newRawPassword = Password.fromRaw("NewSecretPass123!");
 
         when(tokenService.validateToken(invalidToken, email)).thenReturn(false);
 

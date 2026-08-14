@@ -60,14 +60,17 @@ class TokenAuthenticationServiceTest {
         Email email = new Email("jwt@chess.com");
 
         when(tokenProvider.validateRefreshToken(refreshTokenStr)).thenReturn(true);
+        when(tokenProvider.extractRefreshTokenVersion(refreshTokenStr)).thenReturn(0);
         when(tokenProvider.extractEmailFromRefreshToken(refreshTokenStr)).thenReturn(email);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(tokenProvider.generateTokens(testUser)).thenReturn(sampleAuthToken);
 
         AuthToken result = tokenAuthService.refreshToken(refreshTokenStr);
 
         assertNotNull(result);
         assertEquals("access-token-123", result.getAccessToken());
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
@@ -77,6 +80,22 @@ class TokenAuthenticationServiceTest {
         when(tokenProvider.validateRefreshToken(invalidRefresh)).thenReturn(false);
 
         assertThrows(InvalidTokenException.class, () -> tokenAuthService.refreshToken(invalidRefresh));
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidTokenException when refresh token version is stale")
+    void shouldThrowExceptionWhenRefreshTokenVersionStale() {
+        String staleRefresh = "stale-refresh-token";
+        Email email = new Email("jwt@chess.com");
+
+        when(tokenProvider.validateRefreshToken(staleRefresh)).thenReturn(true);
+        when(tokenProvider.extractRefreshTokenVersion(staleRefresh)).thenReturn(0);
+        when(tokenProvider.extractEmailFromRefreshToken(staleRefresh)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+
+        testUser.changePassword(Password.fromHash("newHash123!")); // increments refresh token version
+
+        assertThrows(InvalidTokenException.class, () -> tokenAuthService.refreshToken(staleRefresh));
     }
 
     @Test

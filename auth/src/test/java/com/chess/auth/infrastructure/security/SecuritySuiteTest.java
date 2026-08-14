@@ -55,7 +55,7 @@ class SecuritySuiteTest {
     void preventUserEnumerationOnLogin() {
         Email missingEmail = new Email("missing@chess.com");
         Email existingEmail = new Email("existing@chess.com");
-        Password rawPassword = Password.fromRaw("password123");
+        Password rawPassword = Password.fromRaw("Password123!");
 
         User existingUser = User.create(new Username("existing"), existingEmail, Password.fromHash("hash123"));
 

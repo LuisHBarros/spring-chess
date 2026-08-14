@@ -49,6 +49,7 @@ public class JwtTokenProviderAdapter implements TokenProvider {
                 .header().keyId(keyPairProvider.getKeyId()).and()
                 .subject(user.getEmail().getValue())
                 .claim("type", "refresh")
+                .claim("refreshTokenVersion", user.getRefreshTokenVersion())
                 .issuedAt(now)
                 .expiration(refreshExpiry)
                 .signWith(keyPairProvider.getPrivateKey(), Jwts.SIG.RS256)
@@ -97,6 +98,20 @@ public class JwtTokenProviderAdapter implements TokenProvider {
             return Math.max(0, diffMs / 1000);
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    @Override
+    public int extractRefreshTokenVersion(String token) {
+        try {
+            Claims claims = getClaims(token);
+            Object version = claims.get("refreshTokenVersion");
+            if (version == null) {
+                return -1;
+            }
+            return Integer.parseInt(version.toString());
+        } catch (Exception e) {
+            return -1;
         }
     }
 
