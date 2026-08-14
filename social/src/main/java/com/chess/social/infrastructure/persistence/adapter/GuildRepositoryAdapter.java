@@ -7,11 +7,11 @@ import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.GuildRepository;
 import com.chess.social.infrastructure.persistence.entity.GuildJpaEntity;
 import com.chess.social.infrastructure.persistence.repository.SpringDataGuildRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class GuildRepositoryAdapter implements GuildRepository {
@@ -25,13 +25,13 @@ public class GuildRepositoryAdapter implements GuildRepository {
     @Override
     public Guild save(Guild guild) {
         GuildJpaEntity entity = GuildJpaEntity.fromDomain(guild);
-        GuildJpaEntity saved = repository.save(entity);
+        GuildJpaEntity saved = repository.saveAndFlush(entity);
         return saved.toDomain();
     }
 
     @Override
     public Optional<Guild> findById(GuildId id) {
-        return repository.findById(id.getValue()).map(GuildJpaEntity::toDomain);
+        return repository.findByIdWithDetails(id.getValue()).map(GuildJpaEntity::toDomain);
     }
 
     @Override
@@ -45,10 +45,9 @@ public class GuildRepositoryAdapter implements GuildRepository {
     }
 
     @Override
-    public List<Guild> findAllByMemberId(UserId userId) {
-        return repository.findAllByMemberId(userId.getValue()).stream()
-                .map(GuildJpaEntity::toDomain)
-                .collect(Collectors.toList());
+    public Page<Guild> findAllByMemberId(UserId userId, Pageable pageable) {
+        return repository.findAllByMemberId(userId.getValue(), pageable)
+                .map(GuildJpaEntity::toDomain);
     }
 
     @Override

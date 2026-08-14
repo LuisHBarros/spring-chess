@@ -53,7 +53,7 @@ class GameTest {
     @DisplayName("Should reject move if not player's turn")
     void shouldRejectMoveIfNotPlayersTurn() {
         assertThatThrownBy(() -> game.makeMove(blackPlayer, Position.fromAlgebraic("e7"), Position.fromAlgebraic("e5"), null))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(com.chess.game.domain.exception.NotPlayerTurnException.class)
                 .hasMessageContaining("Not your turn");
     }
 
@@ -120,7 +120,7 @@ class GameTest {
 
         // Attempt castling e1 to g1 should fail as illegal move
         assertThatThrownBy(() -> customGame.makeMove(whitePlayer, e1, Position.fromAlgebraic("g1"), null))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.chess.game.domain.exception.InvalidMoveException.class)
                 .hasMessageContaining("Illegal move");
     }
 
@@ -160,7 +160,50 @@ class GameTest {
         assertThat(customGame.isCheck(Color.WHITE)).isTrue();
 
         assertThatThrownBy(() -> customGame.makeMove(whitePlayer, e1, Position.fromAlgebraic("g1"), null))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.chess.game.domain.exception.InvalidMoveException.class)
+                .hasMessageContaining("Illegal move");
+    }
+
+    @Test
+    @DisplayName("Should PREVENT castling when destination square (g1) is attacked")
+    void shouldPreventCastlingWhenDestinationSquareIsAttacked() {
+        // White king on e1, rook on h1; Black bishop on h2 attacks the castling destination g1
+        Map<Position, Piece> pieces = new HashMap<>();
+        Position e1 = Position.fromAlgebraic("e1");
+        Position h1 = Position.fromAlgebraic("h1");
+        Position h2 = Position.fromAlgebraic("h2"); // Black bishop attacks g1
+        Position e8 = Position.fromAlgebraic("e8");
+
+        pieces.put(e1, Piece.create(PieceType.KING, Color.WHITE, e1));
+        pieces.put(h1, Piece.create(PieceType.ROOK, Color.WHITE, h1));
+        pieces.put(h2, Piece.create(PieceType.BISHOP, Color.BLACK, h2));
+        pieces.put(e8, Piece.create(PieceType.KING, Color.BLACK, e8));
+
+        Board customBoard = Board.reconstitute(pieces);
+        Instant now = Instant.now();
+        Game customGame = Game.reconstitute(
+                GameId.generate(),
+                whitePlayer,
+                blackPlayer,
+                customBoard,
+                GameStatus.IN_PROGRESS,
+                null,
+                Color.WHITE,
+                Collections.emptyList(),
+                0,
+                0,
+                GameClock.create(600, 5),
+                null,
+                now,
+                now
+        );
+
+        // g1 is attacked, but f1 is not
+        assertThat(customBoard.isSquareAttackedBy(Position.fromAlgebraic("g1"), Color.BLACK)).isTrue();
+        assertThat(customBoard.isSquareAttackedBy(Position.fromAlgebraic("f1"), Color.BLACK)).isFalse();
+
+        assertThatThrownBy(() -> customGame.makeMove(whitePlayer, e1, Position.fromAlgebraic("g1"), null))
+                .isInstanceOf(com.chess.game.domain.exception.InvalidMoveException.class)
                 .hasMessageContaining("Illegal move");
     }
 

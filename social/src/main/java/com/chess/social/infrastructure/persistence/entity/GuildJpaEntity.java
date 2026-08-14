@@ -18,7 +18,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -41,13 +43,13 @@ public class GuildJpaEntity {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "guild_id")
-    private List<GuildCategoryJpaEntity> categories = new ArrayList<>();
+    private Set<GuildCategoryJpaEntity> categories = new LinkedHashSet<>();
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "guild_id")
-    private List<GuildMemberJpaEntity> members = new ArrayList<>();
+    private Set<GuildMemberJpaEntity> members = new LinkedHashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -73,8 +75,8 @@ public class GuildJpaEntity {
         this.description = description;
         this.ownerId = ownerId;
         this.avatarUrl = avatarUrl;
-        this.categories = categories != null ? categories : new ArrayList<>();
-        this.members = members != null ? members : new ArrayList<>();
+        this.categories = categories != null ? new LinkedHashSet<>(categories) : new LinkedHashSet<>();
+        this.members = members != null ? new LinkedHashSet<>(members) : new LinkedHashSet<>();
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -163,20 +165,20 @@ public class GuildJpaEntity {
         this.avatarUrl = avatarUrl;
     }
 
-    public List<GuildCategoryJpaEntity> getCategories() {
+    public Set<GuildCategoryJpaEntity> getCategories() {
         return categories;
     }
 
-    public void setCategories(List<GuildCategoryJpaEntity> categories) {
-        this.categories = categories;
+    public void setCategories(Set<GuildCategoryJpaEntity> categories) {
+        this.categories = categories != null ? new LinkedHashSet<>(categories) : new LinkedHashSet<>();
     }
 
-    public List<GuildMemberJpaEntity> getMembers() {
+    public Set<GuildMemberJpaEntity> getMembers() {
         return members;
     }
 
-    public void setMembers(List<GuildMemberJpaEntity> members) {
-        this.members = members;
+    public void setMembers(Set<GuildMemberJpaEntity> members) {
+        this.members = members != null ? new LinkedHashSet<>(members) : new LinkedHashSet<>();
     }
 
     public Instant getCreatedAt() {

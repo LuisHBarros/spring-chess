@@ -2,6 +2,7 @@ package com.chess.chat.domain;
 
 import com.chess.chat.domain.exception.ChatRoomNotFoundException;
 import com.chess.chat.domain.exception.DuplicateDirectChatException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.chess.chat.domain.model.ChatRoom;
 import com.chess.chat.domain.model.ChatRoomId;
 import com.chess.chat.domain.model.ChatRoomStatus;
@@ -74,6 +75,15 @@ class ChatRoomDomainServiceTest {
 
         assertThrows(DuplicateDirectChatException.class, () -> chatRoomDomainService.createDirectChat(user1, user2));
         verify(chatRoomRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenConcurrentDirectChatViolatesUniqueConstraint() {
+        when(chatRoomRepository.findDirectRoomBetweenUsers(user1, user2)).thenReturn(Optional.empty());
+        when(chatRoomRepository.save(any(ChatRoom.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        assertThrows(DuplicateDirectChatException.class, () -> chatRoomDomainService.createDirectChat(user1, user2));
     }
 
     @Test

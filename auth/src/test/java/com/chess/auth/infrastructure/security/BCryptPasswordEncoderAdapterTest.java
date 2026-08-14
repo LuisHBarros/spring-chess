@@ -13,13 +13,13 @@ class BCryptPasswordEncoderAdapterTest {
     @Test
     @DisplayName("Should encode raw password into BCrypt hash and match correctly")
     void shouldEncodeAndMatchPassword() {
-        Password raw = Password.fromRaw("mySecurePassword123");
+        Password raw = Password.fromRaw("MySecurePassword123!");
 
         Password hashed = encoder.encode(raw);
 
         assertTrue(hashed.isHashed());
-        assertNotEquals("mySecurePassword123", hashed.getValue());
+        assertNotEquals("MySecurePassword123!", hashed.getValue());
         assertTrue(encoder.matches(raw, hashed));
-        assertFalse(encoder.matches(Password.fromRaw("wrongPassword123"), hashed));
+        assertFalse(encoder.matches(Password.fromRaw("WrongPassword123!"), hashed));
     }
 }

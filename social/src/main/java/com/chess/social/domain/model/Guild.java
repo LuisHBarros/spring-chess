@@ -212,7 +212,7 @@ public class Guild {
                 .orElseThrow(() -> new GuildMemberNotFoundException("Target user is not a member of this guild"));
 
         if (!actorId.equals(targetMemberId)) {
-            verifyAuthorizedForManagement(actorId);
+            verifyCanKick(actorId);
         }
 
         members.remove(target);
@@ -282,6 +282,30 @@ public class Guild {
         }
 
         throw new UnauthorizedGuildOperationException("Actor does not have management permissions in this guild");
+    }
+
+    private void verifyCanKick(UserId actorId) {
+        if (hasPermission(actorId, RankPermission.KICK_MEMBERS)) {
+            return;
+        }
+        throw new UnauthorizedGuildOperationException("Actor does not have permission to kick members from this guild");
+    }
+
+    public boolean hasPermission(UserId userId, RankPermission permission) {
+        GuildMember member = findMember(userId).orElse(null);
+        if (member == null) {
+            return false;
+        }
+        if (member.getRole() == GuildRole.OWNER || member.getRole() == GuildRole.OFFICER) {
+            return true;
+        }
+        if (member.getAssignedRankId() != null) {
+            GuildRank rank = findRank(member.getAssignedRankId()).orElse(null);
+            if (rank != null && rank.hasPermission(permission)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public GuildId getId() {

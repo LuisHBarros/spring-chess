@@ -10,6 +10,7 @@ import com.chess.social.domain.model.UserId;
 import com.chess.social.domain.repository.FriendshipRepository;
 import com.chess.social.domain.service.FriendshipDomainService;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +79,21 @@ class FriendshipDomainServiceTest {
         when(friendshipRepository.findBetweenUsers(requester, addressee)).thenReturn(Optional.of(existing));
 
         assertThrows(InvalidFriendshipTransitionException.class, () ->
+                service.sendFriendRequest(requester, addressee)
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw exception when concurrent request causes unique constraint violation")
+    void shouldThrowOnDataIntegrityViolation() {
+        UserId requester = UserId.generate();
+        UserId addressee = UserId.generate();
+
+        when(friendshipRepository.findBetweenUsers(requester, addressee)).thenReturn(Optional.empty());
+        when(friendshipRepository.save(any(Friendship.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        assertThrows(FriendshipAlreadyExistsException.class, () ->
                 service.sendFriendRequest(requester, addressee)
         );
     }

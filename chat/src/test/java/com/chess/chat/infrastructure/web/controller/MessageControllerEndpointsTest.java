@@ -75,8 +75,8 @@ class MessageControllerEndpointsTest {
 
     @Test
     void shouldEditMessageEndpoint() throws Exception {
-        Message message = Message.create(chatRoomId, sender, MessageContent.of("Original"), MessageType.TEXT, null);
-        message.editContent(MessageContent.of("Updated Content"));
+        Message message = Message.send(chatRoomId, sender, MessageContent.of("Original"), MessageType.TEXT, null);
+        message.edit(sender, MessageContent.of("Updated Content"));
 
         when(messageDomainService.editMessage(any(), any(), any())).thenReturn(message);
 
@@ -92,8 +92,8 @@ class MessageControllerEndpointsTest {
 
     @Test
     void shouldDeleteMessageEndpoint() throws Exception {
-        Message message = Message.create(chatRoomId, sender, MessageContent.of("To Delete"), MessageType.TEXT, null);
-        message.softDelete();
+        Message message = Message.send(chatRoomId, sender, MessageContent.of("To Delete"), MessageType.TEXT, null);
+        message.delete(sender);
 
         when(messageDomainService.deleteMessage(any(), any())).thenReturn(message);
 
@@ -106,7 +106,7 @@ class MessageControllerEndpointsTest {
 
     @Test
     void shouldAddReactionEndpoint() throws Exception {
-        Message message = Message.create(chatRoomId, sender, MessageContent.of("React to this"), MessageType.TEXT, null);
+        Message message = Message.send(chatRoomId, sender, MessageContent.of("React to this"), MessageType.TEXT, null);
         message.addReaction(sender, "👍");
 
         when(messageDomainService.addReaction(any(), any(), eq("👍"))).thenReturn(message);
@@ -123,7 +123,7 @@ class MessageControllerEndpointsTest {
 
     @Test
     void shouldRemoveReactionEndpoint() throws Exception {
-        Message message = Message.create(chatRoomId, sender, MessageContent.of("Remove reaction"), MessageType.TEXT, null);
+        Message message = Message.send(chatRoomId, sender, MessageContent.of("Remove reaction"), MessageType.TEXT, null);
         when(messageDomainService.removeReaction(any(), any(), eq("👍"))).thenReturn(message);
 
         mockMvc.perform(delete("/api/v1/chat/messages/{id}/reactions", message.getId().getValue())

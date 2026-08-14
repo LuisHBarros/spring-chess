@@ -5,12 +5,15 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+  config:
+    import: optional:file:../.env[.properties]
 
   datasource:
     url: jdbc:postgresql://localhost:5434/chat_db
     username: chat_user
-    password: chat_pass
+    password: ${CHAT_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -32,3 +35,7 @@ aws:
 
 server:
   port: 8082
+
+social:
+  service:
+    url: ${SOCIAL_SERVICE_URL:http://localhost:8081}

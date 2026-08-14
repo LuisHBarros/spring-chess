@@ -66,6 +66,9 @@ public class MessageJpaEntity {
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
+    @Column(name = "sequence", nullable = false)
+    private long sequence;
+
     public MessageJpaEntity() {
     }
 
@@ -80,7 +83,8 @@ public class MessageJpaEntity {
             List<MessageReactionJpaEntity> reactions,
             Instant sentAt,
             Instant editedAt,
-            boolean deleted) {
+            boolean deleted,
+            long sequence) {
         this.id = id;
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
@@ -92,6 +96,7 @@ public class MessageJpaEntity {
         this.sentAt = sentAt;
         this.editedAt = editedAt;
         this.deleted = deleted;
+        this.sequence = sequence;
     }
 
     public static MessageJpaEntity fromDomain(Message message) {
@@ -110,7 +115,8 @@ public class MessageJpaEntity {
                 reactionEntities,
                 message.getSentAt(),
                 message.getEditedAt(),
-                message.isDeleted()
+                message.isDeleted(),
+                message.getSequence()
         );
     }
 
@@ -130,7 +136,8 @@ public class MessageJpaEntity {
                 domainReactions,
                 sentAt,
                 editedAt,
-                deleted
+                deleted,
+                sequence
         );
     }
 
@@ -176,5 +183,9 @@ public class MessageJpaEntity {
 
     public boolean isDeleted() {
         return deleted;
+    }
+
+    public long getSequence() {
+        return sequence;
     }
 }

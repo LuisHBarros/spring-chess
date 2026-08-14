@@ -10,12 +10,15 @@ import com.chess.chat.domain.model.UserId;
 import com.chess.chat.domain.port.ChatEventPublisherPort;
 import com.chess.chat.domain.repository.ChatRoomRepository;
 import com.chess.chat.domain.repository.MessageRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Transactional
 public class ChatRoomDomainService {
     private final ChatRoomRepository chatRoomRepository;
     private final MessageRepository messageRepository;
@@ -43,7 +46,12 @@ public class ChatRoomDomainService {
         }
 
         ChatRoom chatRoom = ChatRoom.createDirect(creatorId, addresseeId);
-        ChatRoom saved = chatRoomRepository.save(chatRoom);
+        ChatRoom saved;
+        try {
+            saved = chatRoomRepository.save(chatRoom);
+        } catch (DataIntegrityViolationException ex) {
+            throw new DuplicateDirectChatException("A direct chat room already exists between users " + creatorId + " and " + addresseeId);
+        }
 
         publishEvent("CHAT_ROOM_CREATED", saved.getId().toString(), Map.of(
                 "roomId", saved.getId().toString(),

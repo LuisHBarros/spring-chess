@@ -19,6 +19,8 @@ public interface MessageRepository {
 
     long countUnreadMessages(ChatRoomId chatRoomId, UserId userId);
 
+    Optional<Message> findTopByChatRoomIdOrderBySequenceDesc(ChatRoomId chatRoomId);
+
     void delete(Message message);
 
     void deleteAllByChatRoomId(ChatRoomId chatRoomId);

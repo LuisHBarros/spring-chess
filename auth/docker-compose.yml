@@ -12,6 +12,8 @@ services:
       - SERVICES=sns,sqs,s3,rds
       - AWS_DEFAULT_REGION=us-east-1
       - DOCKER_HOST=unix:///var/run/docker.sock
+    env_file:
+      - ../.env
     volumes:
       - "../localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -28,6 +30,11 @@ services:
     ports:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI port
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   redis:
@@ -35,5 +42,10 @@ services:
     container_name: auth-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 

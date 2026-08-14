@@ -56,4 +56,19 @@ class JwtTokenProviderAdapterTest {
         long remaining = jwtTokenProvider.getRemainingExpirationSeconds(tokenPair.getAccessToken());
         assertTrue(remaining > 0 && remaining <= 3600);
     }
+
+    @Test
+    @DisplayName("Should embed and extract refresh token version")
+    void shouldEmbedAndExtractRefreshTokenVersion() {
+        AuthToken tokenPair = jwtTokenProvider.generateTokens(testUser);
+
+        int version = jwtTokenProvider.extractRefreshTokenVersion(tokenPair.getRefreshToken());
+        assertEquals(0, version);
+
+        testUser.incrementRefreshTokenVersion();
+        AuthToken newPair = jwtTokenProvider.generateTokens(testUser);
+
+        int newVersion = jwtTokenProvider.extractRefreshTokenVersion(newPair.getRefreshToken());
+        assertEquals(1, newVersion);
+    }
 }

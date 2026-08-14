@@ -31,6 +31,7 @@ class UserJpaEntityTest {
         assertEquals(password.getValue(), entity.getPassword());
         assertEquals(user.getCreatedAt(), entity.getCreatedAt());
         assertEquals(user.getLastSeenAt(), entity.getLastSeenAt());
+        assertEquals(user.getRefreshTokenVersion(), entity.getRefreshTokenVersion());
 
         User convertedDomain = entity.toDomain();
         assertEquals(user.getId(), convertedDomain.getId());
@@ -52,6 +53,7 @@ class UserJpaEntityTest {
         entity.setPassword("pass");
         entity.setCreatedAt(now);
         entity.setLastSeenAt(now);
+        entity.setRefreshTokenVersion(3);
 
         assertEquals(id, entity.getId());
         assertEquals("uname", entity.getUsername());
@@ -59,5 +61,6 @@ class UserJpaEntityTest {
         assertEquals("pass", entity.getPassword());
         assertEquals(now, entity.getCreatedAt());
         assertEquals(now, entity.getLastSeenAt());
+        assertEquals(3, entity.getRefreshTokenVersion());
     }
 }

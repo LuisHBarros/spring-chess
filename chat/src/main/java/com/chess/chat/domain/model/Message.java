@@ -20,6 +20,7 @@ public class Message {
     private final Instant sentAt;
     private Instant editedAt;
     private boolean deleted;
+    private final long sequence;
 
     private Message(
             MessageId id,
@@ -32,7 +33,8 @@ public class Message {
             List<MessageReaction> reactions,
             Instant sentAt,
             Instant editedAt,
-            boolean deleted) {
+            boolean deleted,
+            long sequence) {
         if (id == null) {
             throw new IllegalArgumentException("MessageId cannot be null");
         }
@@ -54,6 +56,9 @@ public class Message {
         if (sentAt == null) {
             throw new IllegalArgumentException("SentAt timestamp cannot be null");
         }
+        if (sequence < 0) {
+            throw new IllegalArgumentException("Sequence cannot be negative");
+        }
 
         this.id = id;
         this.chatRoomId = chatRoomId;
@@ -66,9 +71,10 @@ public class Message {
         this.sentAt = sentAt;
         this.editedAt = editedAt;
         this.deleted = deleted;
+        this.sequence = sequence;
     }
 
-    public static Message send(ChatRoomId chatRoomId, UserId senderId, MessageContent content, MessageType type, MessageId replyToMessageId) {
+    public static Message send(ChatRoomId chatRoomId, UserId senderId, MessageContent content, MessageType type, MessageId replyToMessageId, long sequence) {
         Instant now = Instant.now();
         MessageId messageId = MessageId.generate();
         return new Message(
@@ -82,12 +88,33 @@ public class Message {
                 new ArrayList<>(),
                 now,
                 null,
-                false
+                false,
+                sequence
         );
     }
 
+    public static Message send(ChatRoomId chatRoomId, UserId senderId, MessageContent content, MessageType type, MessageId replyToMessageId) {
+        return send(chatRoomId, senderId, content, type, replyToMessageId, 0L);
+    }
+
     public static Message send(ChatRoomId chatRoomId, UserId senderId, MessageContent content) {
-        return send(chatRoomId, senderId, content, MessageType.TEXT, null);
+        return send(chatRoomId, senderId, content, MessageType.TEXT, null, 0L);
+    }
+
+    public static Message reconstitute(
+            MessageId id,
+            ChatRoomId chatRoomId,
+            UserId senderId,
+            MessageContent content,
+            MessageType type,
+            MessageStatus status,
+            MessageId replyToMessageId,
+            List<MessageReaction> reactions,
+            Instant sentAt,
+            Instant editedAt,
+            boolean deleted,
+            long sequence) {
+        return new Message(id, chatRoomId, senderId, content, type, status, replyToMessageId, reactions, sentAt, editedAt, deleted, sequence);
     }
 
     public static Message reconstitute(
@@ -102,7 +129,7 @@ public class Message {
             Instant sentAt,
             Instant editedAt,
             boolean deleted) {
-        return new Message(id, chatRoomId, senderId, content, type, status, replyToMessageId, reactions, sentAt, editedAt, deleted);
+        return reconstitute(id, chatRoomId, senderId, content, type, status, replyToMessageId, reactions, sentAt, editedAt, deleted, 0L);
     }
 
     public void edit(UserId actorId, MessageContent newContent) {
@@ -203,6 +230,10 @@ public class Message {
 
     public boolean isDeleted() {
         return deleted;
+    }
+
+    public long getSequence() {
+        return sequence;
     }
 
     @Override

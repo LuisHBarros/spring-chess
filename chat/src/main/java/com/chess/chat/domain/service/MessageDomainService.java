@@ -11,8 +11,10 @@ import com.chess.chat.domain.model.Message;
 import com.chess.chat.domain.model.MessageContent;
 import com.chess.chat.domain.model.MessageId;
 import com.chess.chat.domain.model.MessageType;
+import com.chess.chat.domain.model.ChatRoomType;
 import com.chess.chat.domain.model.UserId;
 import com.chess.chat.domain.port.ChatEventPublisherPort;
+import com.chess.chat.domain.port.GuildPermissionPort;
 import com.chess.chat.domain.repository.ChatRoomRepository;
 import com.chess.chat.domain.repository.MessageRepository;
 
@@ -23,20 +25,26 @@ public class MessageDomainService {
     private final ChatRoomRepository chatRoomRepository;
     private final MessageRepository messageRepository;
     private final ChatEventPublisherPort eventPublisher;
+    private final GuildPermissionPort guildPermissionPort;
 
     public MessageDomainService(
             ChatRoomRepository chatRoomRepository,
             MessageRepository messageRepository,
-            ChatEventPublisherPort eventPublisher) {
+            ChatEventPublisherPort eventPublisher,
+            GuildPermissionPort guildPermissionPort) {
         if (chatRoomRepository == null) {
             throw new IllegalArgumentException("ChatRoomRepository cannot be null");
         }
         if (messageRepository == null) {
             throw new IllegalArgumentException("MessageRepository cannot be null");
         }
+        if (guildPermissionPort == null) {
+            throw new IllegalArgumentException("GuildPermissionPort cannot be null");
+        }
         this.chatRoomRepository = chatRoomRepository;
         this.messageRepository = messageRepository;
         this.eventPublisher = eventPublisher;
+        this.guildPermissionPort = guildPermissionPort;
     }
 
     public Message sendMessage(
@@ -56,12 +64,22 @@ public class MessageDomainService {
             throw new UnauthorizedChatOperationException("Sender " + senderId + " is not a participant in chat room " + chatRoomId);
         }
 
+        if (chatRoom.getType() == ChatRoomType.GUILD) {
+            if (!guildPermissionPort.hasChatAccess(senderId, chatRoom.getTargetReferenceId())) {
+                throw new UnauthorizedChatOperationException("Sender " + senderId + " does not have CHAT_ACCESS permission for this guild");
+            }
+        }
+
         if (replyToMessageId != null) {
             messageRepository.findById(replyToMessageId)
                     .orElseThrow(() -> new MessageNotFoundException("Replied message not found with ID: " + replyToMessageId));
         }
 
-        Message message = Message.send(chatRoomId, senderId, content, type, replyToMessageId);
+        long nextSequence = messageRepository.findTopByChatRoomIdOrderBySequenceDesc(chatRoomId)
+                .map(Message::getSequence)
+                .orElse(0L) + 1;
+
+        Message message = Message.send(chatRoomId, senderId, content, type, replyToMessageId, nextSequence);
         Message saved = messageRepository.save(message);
 
         publishEvent("MESSAGE_SENT", saved.getId().toString(), Map.of(

@@ -72,7 +72,7 @@ class ChatRoomJpaEntityTest {
         ChatRoomJpaEntity entity = ChatRoomJpaEntity.fromDomain(domainRoom);
 
         assertEquals("guild-99", entity.getTargetReferenceId());
-        assertEquals(ChatRoomType.GUILD_CHANNEL, entity.getType());
+        assertEquals(ChatRoomType.GUILD, entity.getType());
 
         ChatRoom reconstituted = entity.toDomain();
         assertEquals("guild-99", reconstituted.getTargetReferenceId());
@@ -100,6 +100,7 @@ class ChatRoomJpaEntityTest {
                 "Direct",
                 creator.getValue(),
                 "ref-123",
+                null,
                 null,
                 ChatRoomStatus.ARCHIVED,
                 now,

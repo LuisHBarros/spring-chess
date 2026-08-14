@@ -4,11 +4,17 @@ import com.chess.chat.domain.exception.UnauthorizedChatOperationException;
 import com.chess.chat.domain.model.ChatRoomId;
 import com.chess.chat.domain.model.Message;
 import com.chess.chat.domain.model.MessageContent;
+import com.chess.chat.domain.model.MessageId;
 import com.chess.chat.domain.model.MessageStatus;
 import com.chess.chat.domain.model.MessageType;
 import com.chess.chat.domain.model.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +42,7 @@ class MessageTest {
         assertEquals(MessageType.TEXT, message.getType());
         assertEquals(MessageStatus.SENT, message.getStatus());
         assertFalse(message.isDeleted());
+        assertEquals(0L, message.getSequence());
     }
 
     @Test
@@ -88,5 +95,89 @@ class MessageTest {
 
         message.markAsRead();
         assertEquals(MessageStatus.READ, message.getStatus());
+    }
+
+    @Test
+    void shouldSendMessageWithExplicitSequence() {
+        Message message = Message.send(roomId, senderId, MessageContent.of("Ordered"), MessageType.TEXT, null, 5L);
+
+        assertEquals(5L, message.getSequence());
+    }
+
+    @Test
+    void shouldReconstituteWithExplicitSequence() {
+        Message message = Message.reconstitute(
+                MessageId.generate(),
+                roomId,
+                senderId,
+                MessageContent.of("Reconstituted"),
+                MessageType.TEXT,
+                MessageStatus.SENT,
+                null,
+                new ArrayList<>(),
+                Instant.now(),
+                null,
+                false,
+                7L
+        );
+
+        assertEquals(7L, message.getSequence());
+    }
+
+    @Test
+    void shouldOrderMessagesBySentAtAndSequence() {
+        Instant now = Instant.now();
+
+        Message first = Message.reconstitute(
+                MessageId.generate(),
+                roomId,
+                senderId,
+                MessageContent.of("First"),
+                MessageType.TEXT,
+                MessageStatus.SENT,
+                null,
+                new ArrayList<>(),
+                now,
+                null,
+                false,
+                1L
+        );
+
+        Message second = Message.reconstitute(
+                MessageId.generate(),
+                roomId,
+                senderId,
+                MessageContent.of("Second"),
+                MessageType.TEXT,
+                MessageStatus.SENT,
+                null,
+                new ArrayList<>(),
+                now,
+                null,
+                false,
+                2L
+        );
+
+        Message third = Message.reconstitute(
+                MessageId.generate(),
+                roomId,
+                senderId,
+                MessageContent.of("Third"),
+                MessageType.TEXT,
+                MessageStatus.SENT,
+                null,
+                new ArrayList<>(),
+                now,
+                null,
+                false,
+                3L
+        );
+
+        List<Message> messages = new ArrayList<>(List.of(third, first, second));
+        messages.sort(Comparator.comparing(Message::getSentAt).thenComparingLong(Message::getSequence));
+
+        assertEquals(first, messages.get(0));
+        assertEquals(second, messages.get(1));
+        assertEquals(third, messages.get(2));
     }
 }

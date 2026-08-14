@@ -75,7 +75,7 @@ class ChatRoomControllerEndpointsTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.type").value("GUILD_CHANNEL"))
+                .andExpect(jsonPath("$.data.type").value("GUILD"))
                 .andExpect(jsonPath("$.data.title").value("Guild General"))
                 .andExpect(jsonPath("$.data.targetReferenceId").value("guild-123"));
     }

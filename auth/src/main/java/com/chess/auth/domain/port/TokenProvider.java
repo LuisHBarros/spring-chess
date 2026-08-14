@@ -12,4 +12,5 @@ public interface TokenProvider {
     UserId extractUserIdFromAccessToken(String token);
     Email extractEmailFromRefreshToken(String token);
     long getRemainingExpirationSeconds(String token);
+    int extractRefreshTokenVersion(String token);
 }

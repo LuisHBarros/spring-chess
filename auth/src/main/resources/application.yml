@@ -2,10 +2,13 @@ spring:
   application:
     name: auth-service
 
+  config:
+    import: optional:file:../.env[.properties]
+
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
     username: auth_user
-    password: auth_pass
+    password: ${AUTH_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -33,7 +36,6 @@ spring:
             enable: false
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 604800000
 

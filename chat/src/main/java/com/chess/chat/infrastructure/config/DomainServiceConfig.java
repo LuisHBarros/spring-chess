@@ -1,6 +1,7 @@
 package com.chess.chat.infrastructure.config;
 
 import com.chess.chat.domain.port.ChatEventPublisherPort;
+import com.chess.chat.domain.port.GuildPermissionPort;
 import com.chess.chat.domain.repository.ChatRoomRepository;
 import com.chess.chat.domain.repository.MessageRepository;
 import com.chess.chat.domain.service.ChatRoomDomainService;
@@ -23,7 +24,8 @@ public class DomainServiceConfig {
     public MessageDomainService messageDomainService(
             ChatRoomRepository chatRoomRepository,
             MessageRepository messageRepository,
-            ChatEventPublisherPort eventPublisher) {
-        return new MessageDomainService(chatRoomRepository, messageRepository, eventPublisher);
+            ChatEventPublisherPort eventPublisher,
+            GuildPermissionPort guildPermissionPort) {
+        return new MessageDomainService(chatRoomRepository, messageRepository, eventPublisher, guildPermissionPort);
     }
 }

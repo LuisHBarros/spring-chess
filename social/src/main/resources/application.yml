@@ -5,12 +5,15 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+  config:
+    import: optional:file:../.env[.properties]
 
   datasource:
     url: jdbc:postgresql://localhost:5432/social_db
     username: social_user
-    password: social_pass
+    password: ${SOCIAL_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

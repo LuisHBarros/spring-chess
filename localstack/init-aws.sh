@@ -75,13 +75,13 @@ awslocal sns subscribe --topic-arn "$MATCH_EVENTS_TOPIC_ARN" --protocol sqs --no
 awslocal sns subscribe --topic-arn "$SOCIAL_EVENTS_TOPIC_ARN" --protocol sqs --notification-endpoint "$ANALYTICS_SOCIAL_QUEUE_ARN"
 
 # 6. Initialize RDS PostgreSQL Instances
-echo "Creating RDS PostgreSQL instances: auth-db-instance, social-db-instance, and chat-db-instance..."
+echo "Creating RDS PostgreSQL instances: auth-db-instance, social-db-instance, chat-db-instance, and game-db-instance..."
 awslocal rds create-db-instance \
   --db-instance-identifier auth-db-instance \
   --db-name auth_db \
   --engine postgres \
   --master-username auth_user \
-  --master-user-password auth_pass \
+  --master-user-password ${AUTH_DB_PASSWORD:-auth_pass} \
   --allocated-storage 20 || true
 
 awslocal rds create-db-instance \
@@ -89,7 +89,7 @@ awslocal rds create-db-instance \
   --db-name social_db \
   --engine postgres \
   --master-username social_user \
-  --master-user-password social_pass \
+  --master-user-password ${SOCIAL_DB_PASSWORD:-social_pass} \
   --allocated-storage 20 || true
 
 awslocal rds create-db-instance \
@@ -97,7 +97,15 @@ awslocal rds create-db-instance \
   --db-name chat_db \
   --engine postgres \
   --master-username chat_user \
-  --master-user-password chat_pass \
+  --master-user-password ${CHAT_DB_PASSWORD:-chat_pass} \
+  --allocated-storage 20 || true
+
+awslocal rds create-db-instance \
+  --db-instance-identifier game-db-instance \
+  --db-name game_db \
+  --engine postgres \
+  --master-username game_user \
+  --master-user-password ${GAME_DB_PASSWORD:-game_pass} \
   --allocated-storage 20 || true
 
 # 7. Create DynamoDB Tables
