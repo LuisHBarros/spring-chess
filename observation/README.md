@@ -73,9 +73,10 @@ When Grafana starts, it automatically loads:
    - **Loki** (log search with a derived `traceId` field linked to Tempo)
 
 2. **Dashboards**
-   - `spring-chess-overview` — high-level platform view
-   - `auth-http` — Auth service HTTP/API metrics
-   - `auth-jvm` — Auth service JVM metrics
+   - `spring-chess-overview` — high-level platform view (with a `service` variable to filter all microservices)
+   - `spring-chess-service-http` — generic HTTP/API dashboard for any selected microservice
+   - `spring-chess-service-jvm` — generic JVM/infrastructure dashboard for any selected microservice
+   - `auth-http` / `auth-jvm` — Auth service focused dashboards (legacy)
 
 ---
 
@@ -99,6 +100,30 @@ storage:
 Make sure LocalStack is running and the `tempo-traces` S3 bucket exists. This bucket is created by `localstack/init-aws.sh`.
 
 ---
+
+## Docker Swarm
+
+A full-stack Swarm manifest is available at the repository root: `docker-compose.swarm.yml`.
+It deploys all microservices, the PostgreSQL databases, LocalStack, Redis, MailHog, and the
+LGTM stack in a single overlay network (`chess`).
+
+Build images first:
+
+```bash
+./build-images.sh        # or .\build-images.ps1 on Windows
+```
+
+Then deploy:
+
+```bash
+docker swarm init
+docker stack deploy -c docker-compose.swarm.yml spring-chess
+```
+
+The Swarm compose uses:
+
+- `observation/prometheus/prometheus-swarm.yml` to scrape each service by its Swarm DNS name.
+- `observation/tempo/tempo-swarm.yaml` to store traces in the `localstack` S3 bucket.
 
 ## Important Notes
 

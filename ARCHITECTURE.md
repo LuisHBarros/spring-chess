@@ -197,19 +197,22 @@ The `observation` stack is a self-hosted LGTM setup:
 - **Promtail** forwards Docker container logs to Loki.
 - **Grafana** visualizes everything on port `3000`.
 
-Only `auth` is fully instrumented:
+All microservices (`auth`, `social`, `chat`, and `game`) are instrumented:
 
 - `micrometer-tracing-bridge-otel` and `opentelemetry-exporter-otlp`.
 - `logstash-logback-encoder` for JSON log output.
+- Micrometer `micrometer-registry-prometheus` for JVM and HTTP metrics.
 - Actuator exposes `health`, `info`, `metrics`, `prometheus`.
+- Trace context is propagated through SNS/SQS message attributes and captured in listeners via MDC.
 
-`social`, `chat`, and `game` include Spring Security and can validate JWTs, but they do not currently export traces or metrics. Prometheus only has a scrape target for `auth-service` in the provided `prometheus.yml`.
+Prometheus scrapes all services via `observation/prometheus/prometheus-swarm.yml`, which targets each
+service by its Swarm DNS name (`auth-service`, `social-service`, `chat-service`, `game-service`).
 
 ## 7. Trade-offs and known limitations
 
 1. **Chat is REST/polling, not WebSocket.** The chat service exposes synchronous REST endpoints and uses a `sequence` column for message ordering. Real-time delivery requires the client to poll.
 
-2. **Tracing and metrics are partial.** Only `auth` exports OTLP traces, Prometheus metrics, and structured JSON logs. `social`, `chat`, and `game` have security stubs but no complete trace export.
+2. **Chat test suite is outdated.** `chat` has pre-existing test compilation failures unrelated to observability. CI or packaging for `chat` skips tests for now.
 
 3. **CI only covers `auth` and `social`.** `.github/workflows/ci.yml` and `build.yml` run `mvn clean verify` only for `auth` and `social`. `chat` and `game` are not built in CI, and there is no branch protection or deployment stage.
 

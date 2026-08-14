@@ -3,6 +3,7 @@ package com.chess.chat.infrastructure.messaging;
 import com.chess.chat.domain.port.ChatEventPublisherPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -25,6 +26,9 @@ public class AwsSnsChatEventPublisher implements ChatEventPublisherPort {
 
     private final SnsClient snsClient;
     private final ObjectMapper objectMapper;
+
+    @Autowired(required = false)
+    private Tracer tracer;
 
     @Value("${aws.sns.chat-events-topic-arn:arn:aws:sns:us-east-1:000000000000:chat-events}")
     private String chatEventsTopicArn;
@@ -79,6 +83,9 @@ public class AwsSnsChatEventPublisher implements ChatEventPublisherPort {
     }
 
     private String getCurrentTraceId() {
+        if (tracer != null && tracer.currentSpan() != null) {
+            return tracer.currentSpan().context().traceId();
+        }
         String mdcTraceId = MDC.get("traceId");
         if (mdcTraceId != null && !mdcTraceId.isBlank()) {
             return mdcTraceId;
