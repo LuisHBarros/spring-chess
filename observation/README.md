@@ -1,77 +1,87 @@
-# 🔭 Observability Service (`observation`)
+# Observability Stack (`observation`)
 
-This directory contains the complete Observability Stack for the **Spring Chess** microservices platform.
+This directory contains a **local-only** telemetry stack for the Spring Chess microservices.
 
-It combines **Prometheus**, **Grafana**, **Grafana Tempo**, **Grafana Loki**, **Promtail**, and **MinIO** to provide a unified telemetry solution for **Metrics, Logs, and Traces** (LGTM stack) with S3-compatible backend storage.
+It implements an **LGTM-style** architecture:
+
+- **Prometheus** — metrics collection
+- **Grafana** — dashboards and visualization
+- **Tempo** — distributed tracing
+- **Loki** — log aggregation
+- **Promtail** — log collection from Docker containers
+
+> This setup is intended for **local development only**. It is not a production observability deployment.
 
 ---
 
-## 🏗️ Architecture & Component Overview
+## Component Overview
 
-```
-                          ┌───────────────────────────┐
-                          │   Grafana (Port 3000)     │
-                          └─────────────┬─────────────┘
-                                        │
-             ┌──────────────────────────┼──────────────────────────┐
-             ▼                          ▼                          ▼
-  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-  │     Prometheus      │    │    Grafana Tempo    │    │    Grafana Loki     │
-  │     (Port 9090)     │    │     (Port 3200)     │    │     (Port 3100)     │
-  └──────────▲──────────┘    └──────────▲──────────┘    └──────────▲──────────┘
-             │                          │                          │
-      Metrics Scrape             OTLP Traces (4317/4318)      Log Ingestion (3100)
-             │                          │                          │
-  ┌──────────┴──────────┐    ┌──────────┴──────────┐    ┌──────────┴──────────┐
-  │ Microservices (auth)│    │ Microservices (auth)│    │ Promtail / Docker   │
-  └─────────────────────┘    └─────────────────────┘    └─────────────────────┘
-                                        │
-                               S3 Object Storage
-                                        │
-                             ┌──────────▼──────────┐
-                             │   MinIO / AWS S3    │
-                             │ (Ports 9000 / 9001) │
-                             └─────────────────────┘
-```
-
-### Components
-
-| Service | Port | Description | Credentials / Details |
+| Service | Container Name | Host Port(s) | Purpose |
 |---|---|---|---|
-| **Grafana** | `3000` | Telemetry Dashboards & Visualization | `admin` / `admin` |
-| **Prometheus** | `9090` | Time-series Metrics Scraper & Database | Scrapes `/actuator/prometheus` |
-| **Grafana Tempo** | `3200` (UI/API)<br>`4317` (gRPC)<br>`4318` (HTTP) | Distributed Tracing Backend | Receives OTLP traces; stores blocks in S3/MinIO |
-| **Grafana Loki** | `3100` | Log Aggregation System | TSDB storage engine for application logs |
-| **Promtail** | `9080` | Docker Container Log Collector | Streams logs from Docker engine to Loki |
-| **MinIO (S3)** | `9000` (API)<br>`9001` (Console) | S3-Compatible Object Storage for Traces | `minioadmin` / `minioadmin`<br>Bucket: `tempo-traces` |
+| **Prometheus** | `chess-prometheus` | `9090` | Scrapes and stores time-series metrics. |
+| **Grafana** | `chess-grafana` | `3000` | Visualization UI with provisioned datasources and dashboards. |
+| **Grafana Tempo** | `chess-tempo` | `3200` (UI/API), `4317` (OTLP gRPC), `4318` (OTLP HTTP) | Receives and stores distributed traces. |
+| **Grafana Loki** | `chess-loki` | `3100` | Log aggregation backend. |
+| **Promtail** | `chess-promtail` | `9080` (internal HTTP server) | Discovers Docker containers and pushes logs to Loki. |
+
+### Architecture Notes
+
+- **No MinIO** is included in this stack.
+- **Grafana Tempo stores trace blocks in the existing LocalStack S3** (`host.docker.internal:4566`, bucket `tempo-traces`) as configured in `observation/tempo/tempo.yaml`.
+- **Grafana credentials are hard-coded for local use:** `admin` / `admin`.
+- Prometheus is configured to scrape itself, Tempo, Loki, and the `auth-service` at `host.docker.internal:8080` (see `observation/prometheus/prometheus.yml`).
+- Grafana datasources are pre-provisioned (`observation/grafana/provisioning/datasources/datasources.yml`) for Prometheus, Tempo, and Loki.
+- Dashboards are pre-provisioned from `observation/grafana/dashboards/` (`observation/grafana/provisioning/dashboards/dashboards.yml`).
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
-### 1. Start the Observability Stack
-
-From the root repository or this directory, execute:
+Start the stack with:
 
 ```bash
 docker compose -f observation/docker-compose.yml up -d
 ```
 
-### 2. Verify Services
+Wait for the healthy state, then open the UIs:
 
-- **Grafana**: [http://localhost:3000](http://localhost:3000) (Login: `admin` / `admin`)
-- **Prometheus**: [http://localhost:9090](http://localhost:9090)
-- **Tempo**: [http://localhost:3200](http://localhost:3200)
-- **MinIO Console**: [http://localhost:9001](http://localhost:9001) (Login: `minioadmin` / `minioadmin`)
+| Service | URL |
+|---|---|
+| **Grafana** | http://localhost:3000 |
+| **Prometheus** | http://localhost:9090 |
+| **Tempo** | http://localhost:3200 |
+| **Loki** | http://localhost:3100 |
+
+### Grafana Login
+
+- **Username:** `admin`
+- **Password:** `admin`
+
+### Prometheus Targets
+
+Open http://localhost:9090/targets to verify that the configured scrape endpoints are reachable.
 
 ---
 
-## 🪣 Trace Storage (MinIO & S3 Configuration)
+## Pre-provisioned Grafana Configuration
 
-Grafana Tempo stores trace blocks in S3 object storage.
+When Grafana starts, it automatically loads:
 
-### Local Development (MinIO)
-In local development, Tempo automatically streams traces to the local **MinIO** service into the `tempo-traces` bucket:
+1. **Datasources**
+   - **Prometheus** (default)
+   - **Tempo** (trace search with node graphs and trace-to-logs link to Loki)
+   - **Loki** (log search with a derived `traceId` field linked to Tempo)
+
+2. **Dashboards**
+   - `spring-chess-overview` — high-level platform view
+   - `auth-http` — Auth service HTTP/API metrics
+   - `auth-jvm` — Auth service JVM metrics
+
+---
+
+## Tempo S3 Storage
+
+Tempo is configured to use the **LocalStack S3** endpoint (not MinIO):
 
 ```yaml
 storage:
@@ -79,94 +89,19 @@ storage:
     backend: s3
     s3:
       bucket: tempo-traces
-      endpoint: minio:9000
-      access_key: minioadmin
-      secret_key: minioadmin
+      endpoint: host.docker.internal:4566
+      access_key: test
+      secret_key: test
       insecure: true
-      s3forcepathstyle: true
+      forcepathstyle: true
 ```
 
-### Production Deployment (AWS S3)
-To switch to AWS S3 in production, update `observation/tempo/tempo.yaml` or override environment variables:
-
-```yaml
-storage:
-  trace:
-    backend: s3
-    s3:
-      bucket: <your-production-s3-bucket-name>
-      endpoint: s3.<your-region>.amazonaws.com
-      # Credentials can be loaded via IAM Roles or environment variables
-```
+Make sure LocalStack is running and the `tempo-traces` S3 bucket exists. This bucket is created by `localstack/init-aws.sh`.
 
 ---
 
-## 🔗 Spring Boot Microservice Integration Guide
+## Important Notes
 
-To send **metrics**, **traces**, and **logs** from a Spring Boot service (e.g. `auth`) to this observability stack:
-
-### 1. Add Dependencies (`pom.xml`)
-
-```xml
-<!-- Prometheus Metrics -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-actuator</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-registry-prometheus</artifactId>
-</dependency>
-
-<!-- Tracing (Micrometer Tracing + OTLP exporter to Tempo) -->
-<dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-tracing-bridge-otel</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.opentelemetry</groupId>
-    <artifactId>opentelemetry-exporter-otlp</artifactId>
-</dependency>
-
-<!-- JSON Logging for Loki / Promtail -->
-<dependency>
-    <groupId>net.logstash.logback</groupId>
-    <artifactId>logstash-logback-encoder</artifactId>
-    <version>7.4</version>
-</dependency>
-```
-
-### 2. Configure `application.yml`
-
-```yaml
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}
-  tracing:
-    sampling:
-      probability: 1.0 # 100% sample rate for development
-  otlp:
-    tracing:
-      endpoint: http://localhost:4318/v1/traces
-
-logging:
-  pattern:
-    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-```
-
----
-
-## 📊 Pre-provisioned Grafana Setup
-
-When Grafana starts up, it automatically provisions:
-1. **Datasources**:
-   - **Prometheus** (Default metrics engine)
-   - **Tempo** (Trace search with node graphs and trace-to-logs link to Loki)
-   - **Loki** (Log search with derived regex field linking `traceId` directly to Tempo traces)
-2. **Dashboards**:
-   - **Spring Chess Observability Overview** (`spring-chess-overview`)
+- This is **local telemetry only** and should not be used as-is in production.
+- The local-only `admin`/`admin` credentials are set via `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` in `observation/docker-compose.yml`.
+- The Prometheus `auth-service` job points to `host.docker.internal:8080`; adjust per service or target as needed for your local runs.

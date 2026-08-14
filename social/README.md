@@ -1,44 +1,49 @@
 # Social Microservice (`social`)
 
-A microservice for User Social Interactions, Friendships, Guilds, Customized Categories & Ranks, and Guild Ownership built with **Spring Boot 3** using **Domain-Driven Design (DDD)** architecture.
+A microservice for user social interactions, friendships, guilds, customized categories & ranks, and guild ownership. Built with **Spring Boot 3** and **Domain-Driven Design (DDD)** architecture.
 
 ---
 
-## 🌟 Features
+## Features
 
-- **Domain-Driven Design (DDD)**: Clean architecture separating Domain models, Value Objects, Domain Services, and Repository Ports from Infrastructure adapters.
-- **Friendship Aggregate Root**:
-  - Send, accept, decline, block, unblock, and remove friendships.
-  - Invariant rules: Prevents self-friendship requests, duplicate active requests, and enforces strict transition permissions.
-- **Guild Aggregate Root**:
-  - **Guild Owner**: Every Guild maintains an explicit Owner (the creator).
-  - **Ownership Transfer**: Guild owners can transfer ownership to any member of the guild.
-  - **Member Management**: Add/remove members, update member roles (`OWNER`, `OFFICER`, `MEMBER`), and assign ranks.
-- **Customized Categories & Ranks (Entities)**:
-  - **Guild Categories**: Guilds can create and customize categories (`GuildCategory`) to organize ranks and topics.
-  - **Custom Ranks**: Ranks (`GuildRank`) defined within categories with priority levels (1 = highest) and granular permissions (`MANAGE_RANKS`, `MANAGE_CATEGORIES`, `MANAGE_MEMBERS`, `INVITE_MEMBERS`, `KICK_MEMBERS`, `POST_ANNOUNCEMENTS`, `CHAT_ACCESS`).
-- **Strongly-Typed Value Objects**: Encapsulated validation rules for `UserId` (UUID), `GuildId`, `CategoryId`, `RankId`, `FriendshipId`, `GuildName`, `CategoryName`, and `RankName`.
+- **Domain-Driven Design (DDD)**: Pure domain layer with aggregate roots, entities, value objects, domain services, and repository ports separated from infrastructure adapters.
+- **Aggregate Roots**:
+  - `Guild`: owns `GuildCategory`, `GuildRank`, and `GuildMember` entities.
+  - `Friendship`: manages friend-request lifecycle between two users.
+- **Strongly-Typed Value Objects**:
+  - `UserId`, `GuildId`, `CategoryId`, `RankId`, `FriendshipId`
+  - `GuildName`, `CategoryName`, `RankName`, `Avatar`
+- **Guild Permissions & Ranks**:
+  - `GuildRole`: `OWNER`, `OFFICER`, `MEMBER`.
+  - `RankPermission`: `MANAGE_RANKS`, `MANAGE_CATEGORIES`, `MANAGE_MEMBERS`, `INVITE_MEMBERS`, `KICK_MEMBERS`, `POST_ANNOUNCEMENTS`, `CHAT_ACCESS`.
+  - Custom `GuildRank` instances are created inside `GuildCategory` and define which permissions a member has.
+- **`CHAT_ACCESS` Permission**:
+  - The `chat` microservice calls `GET /api/v1/guilds/{guildId}/members/{userId}/permissions?permission=CHAT_ACCESS` to verify that a guild member is allowed to send messages in a guild channel.
 - **AWS SNS & SQS Asynchronous Messaging**:
-  - Event Publisher: Publishes `social-events` to SNS with W3C `traceId` context propagation.
-  - Event Listeners: Consumes `social-user-events-queue` and `social-match-events-queue.fifo` SQS queues.
-- **Isolated Database & LocalStack RDS**:
-  - Uses dedicated database credentials (`social_user` / `social_pass`) and database `social_db` on LocalStack RDS.
-- **Comprehensive Unit Test Suite**: 39 unit tests covering all domain entities, value objects, state transitions, domain services, and messaging adapters.
+  - Publishes events to the `social-events` SNS topic.
+  - Polls the `social-user-events-queue` and `social-match-events-queue.fifo` SQS queues on a fixed 5-second schedule.
+  - W3C `traceId` is propagated via SNS/SQS message attributes.
+- **TOCTOU Race Handling**:
+  - `FriendshipDomainService` and `GuildDomainService` use database-level `DataIntegrityViolationException` handling to guard against check-then-act races during concurrent friendship/guild creation.
+- **H2 Test Datasource**:
+  - Unit and integration tests run against an in-memory H2 database (`social/src/test/resources/application.yml`).
+- **Swagger / OpenAPI**:
+  - API documentation is available at `http://localhost:8081/swagger-ui.html`.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Framework**: Spring Boot 3.2.4 (Java 17)
+- **Persistence**: Spring Data JPA / Hibernate
+- **Database**: PostgreSQL (`social_db`) for local development; H2 for tests
 - **AWS & Messaging**: AWS SDK v2 (SNS & SQS) via LocalStack
-- **Database**: LocalStack RDS (`social_db` / `social_user`)
-- **Persistence Framework**: Spring Data JPA / Hibernate
 - **Testing**: JUnit 5 (Jupiter), Mockito
 - **Containerization**: Docker Compose
 
 ---
 
-## 📁 Directory & Package Structure
+## Directory & Package Structure
 
 ```
 social/
@@ -49,46 +54,48 @@ social/
     ├── main/
     │   ├── java/com/chess/social/
     │   │   ├── SocialApplication.java
-    │   │   └── domain/                         # Pure DDD Domain Layer (Zero Framework Dependencies)
-    │   │       ├── exception/                  # Domain Exceptions (DomainException, GuildNotFoundException, etc.)
-    │   │       ├── model/                      # Entities & Value Objects (Guild, Friendship, GuildCategory, GuildRank, UserId, etc.)
-    │   │       ├── repository/                 # Repository Ports (GuildRepository, FriendshipRepository)
-    │   │       └── service/                    # Domain Services (GuildDomainService, FriendshipDomainService)
+    │   │   ├── domain/
+    │   │   │   ├── exception/
+    │   │   │   ├── model/          # Aggregates, Entities, Value Objects
+    │   │   │   ├── repository/     # Repository Ports
+    │   │   │   └── service/        # Domain Services
+    │   │   └── infrastructure/
+    │   │       ├── config/         # OpenApiConfig, SecurityConfig, AwsConfig
+    │   │       ├── messaging/      # SNS Publisher & SQS Listeners
+    │   │       ├── persistence/    # JPA Entities, Adapters, Spring Data Repositories
+    │   │       └── web/            # Controllers, DTOs, GlobalExceptionHandler
     │   └── resources/
     │       └── application.yml
-    └── test/                                   # Domain Unit Tests (36 tests passing)
+    └── test/
+        └── resources/
+            └── application.yml     # H2 in-memory datasource
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### Prerequisites
+### 1. Environment Variables
 
-- Java 17+ JDK installed
-- Maven 3.8+ installed
-- Docker & Docker Compose installed
+The service imports the root `.env` file. Ensure the following variable is set before starting the service:
 
-### 1. Start Local Infrastructure Containers
+```dotenv
+SOCIAL_DB_PASSWORD=social_pass
+```
 
-Spin up the dedicated PostgreSQL database container for the Social service:
+This value is used by `social/src/main/resources/application.yml` (`spring.datasource.password`).
+
+### 2. Start Local Infrastructure
 
 ```bash
 docker compose -f social/docker-compose.yml up -d
 ```
 
-| Service | Port | Database | Credentials |
-|---|---|---|---|
-| **PostgreSQL (Social)** | `5433` | `social_db` | User: `social_user` / Pass: `social_pass` |
+The `social/docker-compose.yml` starts LocalStack and maps the following port:
 
-### 2. Run Domain Tests
-
-To execute the unit test suite across domain models and services:
-
-```bash
-cd social
-mvn clean test
-```
+| Host Port | Container Port | Service                  |
+|-----------|----------------|--------------------------|
+| `5433`    | `5432`         | LocalStack RDS PostgreSQL |
 
 ### 3. Run the Application
 
@@ -97,48 +104,89 @@ cd social
 mvn spring-boot:run
 ```
 
+The service listens on port `8081`.
+
+### 4. Swagger UI
+
+Open `http://localhost:8081/swagger-ui.html` to browse the REST API.
+
 ---
 
-## 🏛️ Domain Architecture Deep Dive
+## Domain Architecture
 
-### Aggregates & Entities
+### Aggregates
 
-#### 1. `Guild` (Aggregate Root)
+#### `Guild` (Aggregate Root)
+
 - **Identity**: `GuildId`
-- **Attributes**: `GuildName`, `description`, `UserId ownerId`, `List<GuildCategory> categories`, `List<GuildMember> members`, `createdAt`, `updatedAt`
-- **Key Business Operations**:
-  - `create(GuildName, description, creatorId)`: Automatically sets creator as Owner and initializes default "General" category & default ranks.
-  - `transferOwnership(actorId, newOwnerId)`: Verifies `actorId` is the current owner and transfers ownership to `newOwnerId`.
-  - `addCategory(actorId, categoryName, description)`: Adds a new category after checking authorization.
-  - `addRankToCategory(actorId, categoryId, rankName, priority, permissions)`: Adds a custom rank to a specific category.
-  - `addMember(...)`, `removeMember(...)`, `assignRankToMember(...)`.
+- **Entities**: `GuildCategory` (contains `GuildRank`), `GuildMember`
+- **Value Objects**: `GuildName`, `UserId`, `Avatar`, `CategoryName`, `RankName`
+- **Key Operations**:
+  - `create(...)`: creates the guild, adds the creator as `OWNER`, and initializes a default `General` category with `Leader` (all permissions) and `Member` (`CHAT_ACCESS`) ranks.
+  - `transferOwnership(actorId, newOwnerId)`: only the owner can transfer ownership; the old owner becomes `OFFICER`.
+  - `addCategory(...)`, `addRankToCategory(...)`, `addMember(...)`, `removeMember(...)`, `assignRankToMember(...)`.
 
-#### 2. `Friendship` (Aggregate Root)
+#### `Friendship` (Aggregate Root)
+
 - **Identity**: `FriendshipId`
-- **Attributes**: `UserId requesterId`, `UserId addresseeId`, `FriendshipStatus status`, `UserId actionUserId`, `createdAt`, `updatedAt`
-- **Statuses**: `PENDING`, `ACCEPTED`, `DECLINED`, `BLOCKED`
-- **Key Business Operations**:
-  - `request(requesterId, addresseeId)`: Validates that requester and addressee are different users and sets status to `PENDING`.
-  - `accept(actorId)`: Only addressee can accept.
-  - `decline(actorId)`: Only addressee can decline.
-  - `block(actorId)`: Either participant can block.
-  - `unblock(actorId)`: Only the user who applied the block can unblock.
+- **Value Objects**: `UserId` (requester and addressee)
+- **Status**: `PENDING`, `ACCEPTED`, `DECLINED`, `BLOCKED`
+- **Key Operations**:
+  - `request(requesterId, addresseeId)`: validates the request, preventing self-friendship.
+  - `accept(actorId)`: only the addressee can accept a pending request.
+  - `decline(actorId)`: only the addressee can decline.
+  - `block(actorId)`: either participant can block; only the blocking user can unblock.
 
-#### 3. `GuildCategory` (Entity)
-- **Identity**: `CategoryId`
-- **Attributes**: `CategoryName`, `description`, `List<GuildRank> ranks`
-- **Key Operations**: `addRank(...)`, `removeRank(...)`, `findRank(...)`.
+### Guild Permissions & Ranks
 
-#### 4. `GuildRank` (Entity)
-- **Identity**: `RankId`
-- **Attributes**: `RankName`, `int priority`, `Set<RankPermission> permissions`
+- `OWNER` and `OFFICER` roles implicitly have all permissions.
+- A `GuildMember` may optionally be assigned a `GuildRank`. The rank's `RankPermission` set determines what the member can do.
+- `CHAT_ACCESS` is the permission used by the `chat` microservice to decide whether a user can send messages in a guild chat room.
 
-#### 5. `GuildMember` (Entity)
-- **Attributes**: `UserId`, `GuildRole` (`OWNER`, `OFFICER`, `MEMBER`), `RankId assignedRankId`, `joinedAt`
+### TOCTOU Race Handling
+
+Domain services guard against Time-of-Check to Time-of-Use races by catching database constraint violations on save:
+
+- **`FriendshipDomainService.sendFriendRequest` / `blockUser`**: first checks for an existing friendship, then attempts to save. If a `DataIntegrityViolationException` occurs because another request was inserted concurrently, the service translates it into `FriendshipAlreadyExistsException`.
+- **`GuildDomainService.createGuild`**: first checks `existsByName(...)`, then attempts to save. A concurrent `DataIntegrityViolationException` is translated into `DuplicateCategoryException` with the message "A guild with name ... already exists".
+
+### SNS / SQS Event Flow
+
+```
+[social-events SNS topic]
+        |
+        | publish
+        v
+[AwsSnsSocialEventPublisher]
+
+[social-user-events-queue]  <-- polled by --> [SocialUserEventListener]
+[social-match-events-queue.fifo] <-- polled by --> [SocialMatchEventListener]
+```
+
+- `AwsSnsSocialEventPublisher` (`infrastructure/messaging/AwsSnsSocialEventPublisher.java`) publishes events to the `social-events` SNS topic configured by `aws.sns.social-events-topic-arn`.
+- `SocialUserEventListener` polls the `social-user-events-queue`.
+- `SocialMatchEventListener` polls the `social-match-events-queue.fifo` queue (FIFO).
+- Both listeners run on a `@Scheduled(fixedDelay = 5000)` poll loop and propagate the `traceId` message attribute.
+
+### Test Datasource
+
+`social/src/test/resources/application.yml` overrides the datasource to an H2 in-memory database:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:social_test_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+```
 
 ---
 
-## 🧪 Domain Services
+## Continuous Integration
 
-- **`FriendshipDomainService`**: Handles end-to-end friendship creation, acceptance, declining, blocking, and removing relationships while checking existing relationship states.
-- **`GuildDomainService`**: Orchestrates guild creation with unique name checks, ownership transfers, category/rank management, and member enrollment.
+The current CI pipeline (`.github/workflows/ci.yml` and `.github/workflows/build.yml`) builds and tests only the `auth` and `social` services. The `chat`, `game`, and `observation` services are not yet executed in CI.
