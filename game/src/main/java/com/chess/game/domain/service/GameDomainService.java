@@ -5,12 +5,15 @@ import com.chess.game.domain.model.*;
 import com.chess.game.domain.port.GameEventPublisherPort;
 import com.chess.game.domain.repository.GameHistoryRepository;
 import com.chess.game.domain.repository.GameRepository;
+import com.chess.game.infrastructure.persistence.GameStateSerializer;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Transactional
 public class GameDomainService {
     private final GameRepository gameRepository;
     private final GameEventPublisherPort eventPublisher;
@@ -60,7 +63,7 @@ public class GameDomainService {
                     move.getPieceType(),
                     move.getMoveType(),
                     move.toAlgebraic(),
-                    ""
+                    GameStateSerializer.serializeBoard(saved.getBoard())
             );
             historyRepository.saveMoveRecord(record);
         }

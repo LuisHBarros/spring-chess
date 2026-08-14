@@ -17,6 +17,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.util.List;
@@ -81,12 +82,17 @@ public class GameJpaEntity {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     public GameJpaEntity() {}
 
     public GameJpaEntity(UUID id, UUID whitePlayerId, UUID blackPlayerId, GameStatus status, GameResult result,
                          Color currentTurn, int moveCount, int halfMoveClock, int initialTimeSeconds,
                          int incrementSeconds, long whiteTimeRemainingMs, long blackTimeRemainingMs,
-                         String boardJson, String movesJson, String enPassantTarget, Instant createdAt, Instant updatedAt) {
+                         String boardJson, String movesJson, String enPassantTarget, Instant createdAt, Instant updatedAt,
+                         Long version) {
         this.id = id;
         this.whitePlayerId = whitePlayerId;
         this.blackPlayerId = blackPlayerId;
@@ -104,6 +110,7 @@ public class GameJpaEntity {
         this.enPassantTarget = enPassantTarget;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.version = version;
     }
 
     public static GameJpaEntity fromDomain(Game game) {
@@ -124,7 +131,8 @@ public class GameJpaEntity {
                 GameStateSerializer.serializeMoves(game.moveHistory()),
                 game.getEnPassantTarget() != null ? game.getEnPassantTarget().toAlgebraic() : null,
                 game.getCreatedAt(),
-                game.getUpdatedAt()
+                game.getUpdatedAt(),
+                game.getVersion()
         );
     }
 
@@ -151,7 +159,8 @@ public class GameJpaEntity {
                 clock,
                 epTarget,
                 createdAt,
-                updatedAt
+                updatedAt,
+                version
         );
     }
 
@@ -190,4 +199,6 @@ public class GameJpaEntity {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 }

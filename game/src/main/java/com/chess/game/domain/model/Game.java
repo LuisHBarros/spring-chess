@@ -1,5 +1,10 @@
 package com.chess.game.domain.model;
 
+import com.chess.game.domain.exception.GameAlreadyFinishedException;
+import com.chess.game.domain.exception.InvalidMoveException;
+import com.chess.game.domain.exception.NotPlayerTurnException;
+import com.chess.game.domain.exception.PlayerNotFoundException;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,10 +26,11 @@ public class Game {
     private Position enPassantTarget;
     private final Instant createdAt;
     private Instant updatedAt;
+    private Long version;
 
     private Game(GameId id, PlayerId whitePlayerId, PlayerId blackPlayerId, Board board, GameStatus status,
                  GameResult result, Color currentTurn, List<Move> moveHistory, int moveCount, int halfMoveClock,
-                 GameClock gameClock, Position enPassantTarget, Instant createdAt, Instant updatedAt) {
+                 GameClock gameClock, Position enPassantTarget, Instant createdAt, Instant updatedAt, Long version) {
         if (id == null || whitePlayerId == null || blackPlayerId == null || board == null || status == null || currentTurn == null || createdAt == null || updatedAt == null) {
             throw new IllegalArgumentException("Required fields cannot be null");
         }
@@ -42,23 +48,32 @@ public class Game {
         this.enPassantTarget = enPassantTarget;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.version = version;
     }
 
     public static Game create(PlayerId white, PlayerId black, int initialTimeSec, int incrementSec) {
         Instant now = Instant.now();
         return new Game(GameId.generate(), white, black, Board.create(), GameStatus.WAITING_FOR_OPPONENT, null,
-                Color.WHITE, new ArrayList<>(), 0, 0, GameClock.create(initialTimeSec, incrementSec), null, now, now);
+                Color.WHITE, new ArrayList<>(), 0, 0, GameClock.create(initialTimeSec, incrementSec), null, now, now, null);
     }
 
     public static Game reconstitute(GameId id, PlayerId whitePlayerId, PlayerId blackPlayerId, Board board, GameStatus status,
                                     GameResult result, Color currentTurn, List<Move> moveHistory, int moveCount, int halfMoveClock,
                                     GameClock gameClock, Position enPassantTarget, Instant createdAt, Instant updatedAt) {
-        return new Game(id, whitePlayerId, blackPlayerId, board, status, result, currentTurn, moveHistory, moveCount, halfMoveClock, gameClock, enPassantTarget, createdAt, updatedAt);
+        return reconstitute(id, whitePlayerId, blackPlayerId, board, status, result, currentTurn, moveHistory, moveCount,
+                halfMoveClock, gameClock, enPassantTarget, createdAt, updatedAt, null);
+    }
+
+    public static Game reconstitute(GameId id, PlayerId whitePlayerId, PlayerId blackPlayerId, Board board, GameStatus status,
+                                    GameResult result, Color currentTurn, List<Move> moveHistory, int moveCount, int halfMoveClock,
+                                    GameClock gameClock, Position enPassantTarget, Instant createdAt, Instant updatedAt, Long version) {
+        return new Game(id, whitePlayerId, blackPlayerId, board, status, result, currentTurn, moveHistory, moveCount,
+                halfMoveClock, gameClock, enPassantTarget, createdAt, updatedAt, version);
     }
 
     public void start() {
         if (status != GameStatus.WAITING_FOR_OPPONENT) {
-            throw new IllegalStateException("Game is already started or finished");
+            throw new GameAlreadyFinishedException("Game is already started or finished");
         }
         this.status = GameStatus.IN_PROGRESS;
         this.updatedAt = Instant.now();
@@ -66,21 +81,21 @@ public class Game {
 
     public Move makeMove(PlayerId playerId, Position from, Position to, PieceType promotionPiece) {
         if (status.isTerminal() || status == GameStatus.WAITING_FOR_OPPONENT) {
-            throw new IllegalStateException("Game is not in progress");
+            throw new GameAlreadyFinishedException("Game is not in progress");
         }
         Color playerColor = getPlayerColor(playerId);
         if (currentTurn != playerColor) {
-            throw new IllegalStateException("Not your turn");
+            throw new NotPlayerTurnException("Not your turn");
         }
 
-        Piece piece = board.getPieceAt(from).orElseThrow(() -> new IllegalArgumentException("No piece at source position"));
+        Piece piece = board.getPieceAt(from).orElseThrow(() -> new InvalidMoveException("No piece at source position"));
         if (piece.getColor() != currentTurn) {
-            throw new IllegalArgumentException("Cannot move opponent's piece");
+            throw new InvalidMoveException("Cannot move opponent's piece");
         }
 
         MoveType moveType = determineMoveType(piece, from, to);
         if (!isPseudoLegalMove(piece, to, moveType)) {
-            throw new IllegalArgumentException("Illegal move for piece");
+            throw new InvalidMoveException("Illegal move for piece");
         }
         
         Optional<Piece> capturedPiece = board.getPieceAt(to);
@@ -90,7 +105,7 @@ public class Game {
 
         Move move;
         if (moveType == MoveType.PAWN_PROMOTION) {
-            if (promotionPiece == null) throw new IllegalArgumentException("Promotion piece required");
+            if (promotionPiece == null) throw new InvalidMoveException("Promotion piece required");
             move = Move.promotion(from, to, promotionPiece, capturedPiece.map(Piece::getPieceType).orElse(null));
         } else if (moveType == MoveType.CAPTURE || capturedPiece.isPresent()) {
             move = Move.capture(from, to, piece.getPieceType(), capturedPiece.get().getPieceType());
@@ -107,7 +122,7 @@ public class Game {
         Board newBoard = board.movePiece(move);
 
         if (newBoard.isSquareAttackedBy(newBoard.getKingPosition(currentTurn), currentTurn.opposite())) {
-            throw new IllegalArgumentException("Move leaves king in check");
+            throw new InvalidMoveException("Move leaves king in check");
         }
 
         this.board = newBoard;
@@ -254,7 +269,8 @@ public class Game {
                     if (rook.isPresent() && rook.get().getPieceType() == PieceType.ROOK && !rook.get().hasMoved()) {
                         if (!board.isPathClear(from, Position.of(rookFile, from.getRank()))) return false;
                         Position intermediate = Position.of(fileDiff > 0 ? 5 : 3, from.getRank());
-                        return !board.isSquareAttackedBy(intermediate, piece.getColor().opposite());
+                        if (board.isSquareAttackedBy(intermediate, piece.getColor().opposite())) return false;
+                        return !board.isSquareAttackedBy(to, piece.getColor().opposite());
                     }
                 }
                 return false;
@@ -266,7 +282,7 @@ public class Game {
     public Color getPlayerColor(PlayerId playerId) {
         if (playerId.equals(whitePlayerId)) return Color.WHITE;
         if (playerId.equals(blackPlayerId)) return Color.BLACK;
-        throw new IllegalArgumentException("Player not in this game");
+        throw new PlayerNotFoundException("Player not in this game");
     }
 
     public List<Move> moveHistory() { return Collections.unmodifiableList(moveHistory); }
@@ -283,4 +299,5 @@ public class Game {
     public Position getEnPassantTarget() { return enPassantTarget; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Long getVersion() { return version; }
 }

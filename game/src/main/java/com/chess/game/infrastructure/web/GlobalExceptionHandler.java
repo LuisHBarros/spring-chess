@@ -6,7 +6,9 @@ import com.chess.game.domain.exception.GameNotFoundException;
 import com.chess.game.domain.exception.InvalidMoveException;
 import com.chess.game.domain.exception.NotPlayerTurnException;
 import com.chess.game.infrastructure.web.dto.ApiResponseDto;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -49,6 +51,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponseDto<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
         return ApiResponseDto.error(ex.getMessage());
+    }
+
+    @ExceptionHandler({OptimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class})
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponseDto<Void> handleOptimisticLockException(Exception ex) {
+        return ApiResponseDto.error("Concurrent move conflict: " + ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
