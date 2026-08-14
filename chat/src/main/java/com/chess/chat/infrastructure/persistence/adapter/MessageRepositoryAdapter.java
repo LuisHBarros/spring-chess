@@ -37,9 +37,15 @@ public class MessageRepositoryAdapter implements MessageRepository {
 
     @Override
     public List<Message> findByChatRoomId(ChatRoomId chatRoomId, int page, int size) {
-        return repository.findByChatRoomIdOrderBySentAtDesc(chatRoomId.getValue(), PageRequest.of(page, size)).stream()
+        return repository.findByChatRoomIdOrderBySentAtDescSequenceDesc(chatRoomId.getValue(), PageRequest.of(page, size)).stream()
                 .map(MessageJpaEntity::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<Message> findTopByChatRoomIdOrderBySequenceDesc(ChatRoomId chatRoomId) {
+        return repository.findTopByChatRoomIdOrderBySequenceDesc(chatRoomId.getValue())
+                .map(MessageJpaEntity::toDomain);
     }
 
     @Override

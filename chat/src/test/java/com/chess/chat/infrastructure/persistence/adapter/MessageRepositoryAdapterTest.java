@@ -42,7 +42,7 @@ class MessageRepositoryAdapterTest {
     void setUp() {
         chatRoomId = ChatRoomId.generate();
         sender = UserId.generate();
-        message = Message.create(chatRoomId, sender, MessageContent.of("Hello world"), MessageType.TEXT, null);
+        message = Message.send(chatRoomId, sender, MessageContent.of("Hello world"), MessageType.TEXT, null);
         entity = MessageJpaEntity.fromDomain(message);
     }
 
@@ -82,14 +82,27 @@ class MessageRepositoryAdapterTest {
 
     @Test
     void shouldFindByChatRoomIdWithPagination() {
-        when(repository.findByChatRoomIdOrderBySentAtDesc(eq(chatRoomId.getValue()), eq(PageRequest.of(0, 10))))
+        when(repository.findByChatRoomIdOrderBySentAtDescSequenceDesc(eq(chatRoomId.getValue()), eq(PageRequest.of(0, 10))))
                 .thenReturn(List.of(entity));
 
         List<Message> results = adapter.findByChatRoomId(chatRoomId, 0, 10);
 
         assertEquals(1, results.size());
         assertEquals(message.getId(), results.get(0).getId());
-        verify(repository).findByChatRoomIdOrderBySentAtDesc(eq(chatRoomId.getValue()), eq(PageRequest.of(0, 10)));
+        verify(repository).findByChatRoomIdOrderBySentAtDescSequenceDesc(eq(chatRoomId.getValue()), eq(PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void shouldFindTopByChatRoomIdOrderBySequenceDesc() {
+        when(repository.findTopByChatRoomIdOrderBySequenceDesc(chatRoomId.getValue()))
+                .thenReturn(Optional.of(entity));
+
+        Optional<Message> result = adapter.findTopByChatRoomIdOrderBySequenceDesc(chatRoomId);
+
+        assertTrue(result.isPresent());
+        assertEquals(message.getId(), result.get().getId());
+        assertEquals(message.getSequence(), result.get().getSequence());
+        verify(repository).findTopByChatRoomIdOrderBySequenceDesc(chatRoomId.getValue());
     }
 
     @Test

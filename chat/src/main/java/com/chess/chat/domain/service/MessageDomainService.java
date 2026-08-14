@@ -75,7 +75,11 @@ public class MessageDomainService {
                     .orElseThrow(() -> new MessageNotFoundException("Replied message not found with ID: " + replyToMessageId));
         }
 
-        Message message = Message.send(chatRoomId, senderId, content, type, replyToMessageId);
+        long nextSequence = messageRepository.findTopByChatRoomIdOrderBySequenceDesc(chatRoomId)
+                .map(Message::getSequence)
+                .orElse(0L) + 1;
+
+        Message message = Message.send(chatRoomId, senderId, content, type, replyToMessageId, nextSequence);
         Message saved = messageRepository.save(message);
 
         publishEvent("MESSAGE_SENT", saved.getId().toString(), Map.of(

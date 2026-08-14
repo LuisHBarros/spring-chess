@@ -28,7 +28,7 @@ class MessageJpaEntityTest {
 
     @Test
     void shouldMapTextMessageToEntityAndBack() {
-        Message domainMessage = Message.create(chatRoomId, sender, MessageContent.of("Checkmate!"), MessageType.TEXT, null);
+        Message domainMessage = Message.send(chatRoomId, sender, MessageContent.of("Checkmate!"), MessageType.TEXT, null);
         domainMessage.addReaction(sender, "🎉");
 
         MessageJpaEntity entity = MessageJpaEntity.fromDomain(domainMessage);
@@ -45,6 +45,7 @@ class MessageJpaEntityTest {
         assertEquals("🎉", entity.getReactions().get(0).getEmoji());
         assertFalse(entity.isDeleted());
         assertNotNull(entity.getSentAt());
+        assertEquals(0L, entity.getSequence());
 
         Message reconstituted = entity.toDomain();
         assertEquals(domainMessage.getId(), reconstituted.getId());
@@ -54,21 +55,24 @@ class MessageJpaEntityTest {
         assertEquals(MessageType.TEXT, reconstituted.getType());
         assertEquals(1, reconstituted.getReactions().size());
         assertEquals("🎉", reconstituted.getReactions().get(0).getEmoji());
+        assertEquals(0L, reconstituted.getSequence());
     }
 
     @Test
     void shouldMapSystemMessageWithReplyToId() {
         MessageId parentId = MessageId.generate();
-        Message domainMessage = Message.create(chatRoomId, sender, MessageContent.of("e4 e5"), MessageType.MOVE_SHARE, parentId);
+        Message domainMessage = Message.send(chatRoomId, sender, MessageContent.of("e4 e5"), MessageType.MOVE_SHARE, parentId);
 
         MessageJpaEntity entity = MessageJpaEntity.fromDomain(domainMessage);
 
         assertEquals(MessageType.MOVE_SHARE, entity.getType());
         assertEquals(parentId.getValue(), entity.getReplyToMessageId());
+        assertEquals(0L, entity.getSequence());
 
         Message reconstituted = entity.toDomain();
         assertEquals(MessageType.MOVE_SHARE, reconstituted.getType());
         assertEquals(parentId, reconstituted.getReplyToMessageId());
+        assertEquals(0L, reconstituted.getSequence());
     }
 
     @Test
@@ -86,7 +90,8 @@ class MessageJpaEntityTest {
                 null,
                 now,
                 now,
-                true
+                true,
+                42L
         );
 
         assertEquals(msgId, entity.getId());
@@ -99,5 +104,6 @@ class MessageJpaEntityTest {
         assertEquals(now, entity.getSentAt());
         assertEquals(now, entity.getEditedAt());
         assertTrue(entity.isDeleted());
+        assertEquals(42L, entity.getSequence());
     }
 }
