@@ -7,10 +7,13 @@ spring:
         jwt:
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
 
+  config:
+    import: optional:file:../.env[.properties]
+
   datasource:
     url: jdbc:postgresql://localhost:5434/chat_db
     username: chat_user
-    password: chat_pass
+    password: ${CHAT_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

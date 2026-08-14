@@ -2,10 +2,13 @@ spring:
   application:
     name: auth-service
 
+  config:
+    import: optional:file:../.env[.properties]
+
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
     username: auth_user
-    password: auth_pass
+    password: ${AUTH_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
