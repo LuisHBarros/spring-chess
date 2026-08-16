@@ -45,4 +45,20 @@ class SocialMatchEventListenerTest {
 
         verify(sqsClient, times(1)).deleteMessage(any(DeleteMessageRequest.class));
     }
+
+    @Test
+    @DisplayName("Should process SQS match event when no traceId attribute is present")
+    void shouldProcessMessageWithoutTraceId() {
+        Message message = Message.builder()
+                .messageId("msg-match-event-2")
+                .receiptHandle("handle-uvw")
+                .body("{\"matchId\":\"match-002\",\"winner\":\"user-789\",\"loser\":\"user-012\"}")
+                .build();
+
+        when(sqsClient.deleteMessage(any(DeleteMessageRequest.class))).thenReturn(DeleteMessageResponse.builder().build());
+
+        assertDoesNotThrow(() -> listener.processMessage(message));
+
+        verify(sqsClient, times(1)).deleteMessage(any(DeleteMessageRequest.class));
+    }
 }

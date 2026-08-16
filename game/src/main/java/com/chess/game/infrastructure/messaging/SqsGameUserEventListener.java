@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -36,13 +37,25 @@ public class SqsGameUserEventListener {
                     .queueUrl(queueUrl)
                     .maxNumberOfMessages(10)
                     .waitTimeSeconds(5)
+                    .messageAttributeNames("All")
                     .build();
 
             List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
 
             for (Message message : messages) {
-                processMessage(message);
-                deleteMessage(message);
+                String traceId = extractTraceId(message);
+                if (traceId != null) {
+                    MDC.put("traceId", traceId);
+                }
+                try {
+                    processMessage(message);
+                    deleteMessage(message);
+                    log.info("Successfully processed and deleted message ID: {}", message.messageId());
+                } catch (Exception e) {
+                    log.error("Failed to process SQS user event message ID: {}", message.messageId(), e);
+                } finally {
+                    MDC.remove("traceId");
+                }
             }
         } catch (Exception e) {
             log.error("Error polling messages from SQS", e);
@@ -56,8 +69,9 @@ public class SqsGameUserEventListener {
             JsonNode payloadNode = objectMapper.readTree(messageStr);
 
             String eventType = payloadNode.has("eventType") ? payloadNode.get("eventType").asText() : "UNKNOWN";
-            
-            log.info("Game service received user event: {}", eventType);
+
+            log.info("Game service received user event: {}, message ID: {}, traceId: {}",
+                    eventType, message.messageId(), MDC.get("traceId"));
             // Process the user event appropriately (e.g. USER_CREATED, USER_UPDATED)
         } catch (Exception e) {
             log.error("Error processing message body: {}", message.body(), e);
@@ -74,5 +88,12 @@ public class SqsGameUserEventListener {
         } catch (Exception e) {
             log.error("Error deleting message from SQS", e);
         }
+    }
+
+    private String extractTraceId(Message message) {
+        if (message.messageAttributes() != null && message.messageAttributes().containsKey("traceId")) {
+            return message.messageAttributes().get("traceId").stringValue();
+        }
+        return null;
     }
 }

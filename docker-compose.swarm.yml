@@ -1,0 +1,342 @@
+# Full Spring Chess platform deployed as a single Docker Swarm stack.
+# The observability (LGTM) services are included and all microservices are
+# pre-wired to ship Prometheus metrics, OpenTelemetry traces, and JSON logs.
+#
+# Build images first:
+#   powershell -File build-images.ps1
+# or on WSL/Git Bash:
+#   ./build-images.sh
+#
+# Deploy:
+#   docker swarm init
+#   docker stack deploy -c docker-compose.swarm.yml spring-chess
+
+networks:
+  chess:
+    driver: overlay
+    attachable: true
+
+volumes:
+  prometheus_data:
+  tempo_wal:
+  loki_data:
+  grafana_data:
+  auth_db_data:
+  social_db_data:
+  chat_db_data:
+  game_db_data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # Shared backing services
+  # ---------------------------------------------------------------------------
+  auth-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  social-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: social_db
+      POSTGRES_USER: social_user
+      POSTGRES_PASSWORD: social_pass
+    volumes:
+      - social_db_data:/var/lib/postgresql/data
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U social_user -d social_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  chat-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_pass
+    volumes:
+      - chat_db_data:/var/lib/postgresql/data
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  game-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: game_db
+      POSTGRES_USER: game_user
+      POSTGRES_PASSWORD: game_pass
+    volumes:
+      - game_db_data:/var/lib/postgresql/data
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U game_user -d game_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  localstack:
+    image: localstack/localstack:3.0.0
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sns,sqs,s3,dynamodb
+      - AWS_DEFAULT_REGION=us-east-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD", "awslocal", "s3", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Spring Chess microservices
+  # ---------------------------------------------------------------------------
+  auth-service:
+    image: chess-auth:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=auth_user
+      - SPRING_DATASOURCE_PASSWORD=auth_pass
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_MAIL_HOST=mailhog
+      - AWS_ENDPOINT=http://localstack:4566
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  social-service:
+    image: chess-social:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://social-db:5432/social_db
+      - SPRING_DATASOURCE_USERNAME=social_user
+      - SPRING_DATASOURCE_PASSWORD=social_pass
+      - AWS_ENDPOINT=http://localstack:4566
+      - JWK_SET_URI=http://auth-service:8080/.well-known/jwks.json
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  chat-service:
+    image: chess-chat:latest
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://chat-db:5432/chat_db
+      - SPRING_DATASOURCE_USERNAME=chat_user
+      - SPRING_DATASOURCE_PASSWORD=chat_pass
+      - AWS_ENDPOINT=http://localstack:4566
+      - JWK_SET_URI=http://auth-service:8080/.well-known/jwks.json
+      - SOCIAL_SERVICE_URL=http://social-service:8081
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  game-service:
+    image: chess-game:latest
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://game-db:5432/game_db
+      - SPRING_DATASOURCE_USERNAME=game_user
+      - SPRING_DATASOURCE_PASSWORD=game_pass
+      - AWS_ENDPOINT=http://localstack:4566
+      - JWK_SET_URI=http://auth-service:8080/.well-known/jwks.json
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Observability / LGTM stack
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observation/prometheus/prometheus-swarm.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observation/tempo/tempo-swarm.yaml:/etc/tempo.yaml:ro
+      - tempo_wal:/tmp/tempo/wal
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  loki:
+    image: grafana/loki:2.9.8
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observation/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+    networks:
+      - chess
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    command: ["-config.file=/etc/promtail/promtail.yaml"]
+    volumes:
+      - ./observation/promtail/promtail.yaml:/etc/promtail/promtail.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./observation/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observation/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - chess
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure

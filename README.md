@@ -182,14 +182,16 @@ The CI workflows intentionally do **not** cover `chat` or `game`, and there is n
 
 ## Observability
 
-Only `auth` is fully wired for observability:
+All microservices are wired for observability:
 
 - Actuator endpoints exposed: `health`, `info`, `metrics`, `prometheus`.
-- Prometheus `jvm_` and `http_` metrics via Micrometer.
+- Prometheus `jvm_` and `http_` metrics via Micrometer, tagged with `application`.
 - OpenTelemetry OTLP trace export to Tempo (default `http://localhost:4318/v1/traces`).
 - Structured JSON logs using the Logstash encoder, suitable for Loki/Promtail ingestion.
+- Trace propagation through SNS/SQS message attributes.
 
-`social`, `chat`, and `game` include the Spring Security OAuth2 resource-server and minimal configuration stubs, but they do not currently export traces or metrics to the observability stack. See [observation/README.md](./observation/README.md) for the LGTM stack details.
+See [observation/README.md](./observation/README.md) for the LGTM stack details and the
+`docker-compose.swarm.yml` at the repository root for a full Docker Swarm deployment.
 
 ## Contributing
 

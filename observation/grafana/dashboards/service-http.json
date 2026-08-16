@@ -15,20 +15,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [
-    {
-      "title": "Service HTTP & API",
-      "url": "/d/spring-chess-service-http",
-      "type": "link",
-      "icon": "external link"
-    },
-    {
-      "title": "Service JVM & Infra",
-      "url": "/d/spring-chess-service-jvm",
-      "type": "link",
-      "icon": "external link"
-    }
-  ],
+  "links": [],
   "liveNow": false,
   "panels": [
     {
@@ -43,7 +30,7 @@
       "type": "text",
       "options": {
         "mode": "markdown",
-        "content": "# 🔭 Spring Chess — Observability Overview\nHigh-level health and signal overview across all pillars: **Metrics**, **Traces**, and **Logs**."
+        "content": "# 🏰 Spring Chess — Service HTTP & API\nHTTP traffic, latency percentiles, error tracking, and upstream dependency health."
       }
     },
     {
@@ -54,7 +41,7 @@
         "y": 2
       },
       "id": 1,
-      "title": "HTTP Request Rate",
+      "title": "Request Rate (req/s)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -115,6 +102,67 @@
         "y": 2
       },
       "id": 2,
+      "title": "Avg Latency (p50)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 2
+      },
+      "id": 3,
       "title": "P95 Latency",
       "type": "stat",
       "datasource": {
@@ -172,10 +220,71 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 8,
+        "x": 12,
         "y": 2
       },
-      "id": 3,
+      "id": 4,
+      "title": "P99 Latency",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 2
+      },
+      "id": 5,
       "title": "Error Rate (5xx)",
       "type": "stat",
       "datasource": {
@@ -233,11 +342,11 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 12,
+        "x": 20,
         "y": 2
       },
-      "id": 4,
-      "title": "Heap Used",
+      "id": 6,
+      "title": "Active HTTP Connections",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -251,68 +360,7 @@
           "thresholds": {
             "steps": [
               {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 268435456
-              },
-              {
-                "color": "red",
-                "value": 536870912
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "options": {
-        "graphMode": "area",
-        "colorMode": "background",
-        "textMode": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "sum(jvm_memory_used_bytes{application=~\"$service\", area=\"heap\"})",
-          "legendFormat": "Heap",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 2
-      },
-      "id": 5,
-      "title": "Live Threads",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
+                "color": "blue",
                 "value": null
               },
               {
@@ -321,7 +369,7 @@
               },
               {
                 "color": "red",
-                "value": 300
+                "value": 500
               }
             ]
           }
@@ -344,68 +392,8 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "jvm_threads_live_threads{application=~\"$service\"}",
-          "legendFormat": "threads",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 2
-      },
-      "id": 6,
-      "title": "DB Pool Active",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 9
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "graphMode": "area",
-        "colorMode": "background",
-        "textMode": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "hikaricp_connections_active{application=~\"$service\"}",
-          "legendFormat": "active",
+          "expr": "tomcat_connections_current_connections{application=~\"$service\"}",
+          "legendFormat": "connections",
           "refId": "A"
         }
       ]
@@ -432,6 +420,7 @@
           "custom": {
             "lineWidth": 2,
             "fillOpacity": 15,
+            "pointSize": 5,
             "spanNulls": true,
             "drawStyle": "line",
             "showPoints": "never",
@@ -474,7 +463,7 @@
         "y": 6
       },
       "id": 11,
-      "title": "JVM Heap Memory Usage",
+      "title": "HTTP Latency Percentiles (p50 / p95 / p99)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -487,13 +476,13 @@
           },
           "custom": {
             "lineWidth": 2,
-            "fillOpacity": 20,
+            "fillOpacity": 10,
             "spanNulls": true,
             "drawStyle": "line",
             "showPoints": "never",
             "gradientMode": "scheme"
           },
-          "unit": "bytes"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -516,8 +505,8 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{application=~\"$service\", area=\"heap\"})",
-          "legendFormat": "Used",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le))",
+          "legendFormat": "p50",
           "refId": "A"
         },
         {
@@ -525,8 +514,8 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{application=~\"$service\", area=\"heap\"})",
-          "legendFormat": "Committed",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le))",
+          "legendFormat": "p95",
           "refId": "B"
         },
         {
@@ -534,9 +523,169 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{application=~\"$service\", area=\"heap\"})",
-          "legendFormat": "Max",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le))",
+          "legendFormat": "p99",
           "refId": "C"
+        }
+      ]
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 12,
+      "title": "HTTP Response Status Codes (Rate)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 30,
+            "spanNulls": true,
+            "drawStyle": "bars",
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal"
+            },
+            "gradientMode": "scheme"
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "2.."
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "4.."
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "5.."
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=~\"$service\"}[1m])) by (status)",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 13,
+      "title": "HTTP Latency by Endpoint (p95)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true,
+            "drawStyle": "line",
+            "showPoints": "never",
+            "gradientMode": "scheme"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=~\"$service\"}[5m])) by (le, uri))",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
         }
       ]
     },
@@ -545,7 +694,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "id": 20,
       "title": "Application Logs (Loki)",
@@ -583,16 +732,17 @@
   "tags": [
     "spring-chess",
     "observability",
-    "overview"
+    "http",
+    "service"
   ],
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Spring Chess — Observability Overview",
-  "uid": "spring-chess-overview",
+  "title": "Spring Chess — Service HTTP & API",
+  "uid": "spring-chess-service-http",
   "templating": {
     "list": [
       {

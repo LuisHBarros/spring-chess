@@ -17,6 +17,7 @@
         <java.version>17</java.version>
         <springdoc.version>2.5.0</springdoc.version>
         <aws.sdk.version>2.25.15</aws.sdk.version>
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
         <sonar.projectKey>LuisHBarros_spring-chess-game</sonar.projectKey>
     </properties>
     <dependencyManagement>
@@ -81,6 +82,29 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <!-- Structured JSON Logging -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
